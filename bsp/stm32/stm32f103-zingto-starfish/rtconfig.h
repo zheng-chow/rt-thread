@@ -17,6 +17,7 @@
 #define RT_IDLE_HOOK_LIST_SIZE 4
 #define IDLE_THREAD_STACK_SIZE 256
 #define RT_DEBUG
+#define RT_DEBUG_COLOR
 
 /* Inter-Thread communication */
 
@@ -153,11 +154,9 @@
 
 /* Hardware Drivers Config */
 
-#define SOC_STM32F103C8
+#define SOC_STM32F103VE
 
 /* Onboard Peripheral Drivers */
-
-#define BSP_USING_USB_TO_USART
 
 /* On-chip Peripheral Drivers */
 
