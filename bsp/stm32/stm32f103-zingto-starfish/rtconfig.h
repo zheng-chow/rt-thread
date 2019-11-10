@@ -165,6 +165,13 @@
 #define BSP_USING_UART
 #define BSP_USING_UART1
 #define BSP_UART1_RX_USING_DMA
+#define BSP_USING_UART2
+#define BSP_UART2_RX_USING_DMA
+#define BSP_UART2_TX_USING_DMA
+#define BSP_USING_UART3
+#define BSP_UART3_RX_USING_DMA
+#define BSP_USING_UART4
+#define BSP_UART4_RX_USING_DMA
 
 /* Board extended module Drivers */
 
