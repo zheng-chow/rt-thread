@@ -484,9 +484,12 @@ static void uart4_rx_entry(void* parameter)
         
         // add some code to process the frame data.
         if (bufsz != 0) {
-            int lat = (rt_int16_t)pbuf[0];
-            int lon = (rt_int16_t)pbuf[2];
-            float alt = (float)(rt_int16_t)pbuf[4];
+            
+            print_rawdata(pbuf, 6, "RAW");
+            
+            int lat = *(rt_int16_t*)&pbuf[4];
+            int lon = *(rt_int16_t*)&pbuf[2];
+            float alt = (float)*(rt_int16_t*)&pbuf[0];
             
             rt_uint8_t* pkg = (rt_uint8_t*) rt_mp_alloc(mpUart2Tx, 0);
             if (!pkg) {rt_kprintf("tRX4: no mem\n"); continue;}
