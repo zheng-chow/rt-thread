@@ -140,6 +140,10 @@ static void mavlink_build_MSG87(rt_uint8_t *buff, rt_uint8_t crc, int lat, int l
     package.lat_int = lat;
     package.lon_int = lon;
     package.alt = alt;
+    
+    package.lat_int = (rt_uint32_t)package.lat_int & 0x0000FFFF;
+    package.lon_int = (rt_uint32_t)package.lon_int & 0x0000FFFF;
+    
     package.coordinate_frame = 0x05;
     package.type_mask = 0xFFF8;
     rt_memcpy(&buff[6], &package, sizeof(package));
