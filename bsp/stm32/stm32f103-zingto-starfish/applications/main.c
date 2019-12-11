@@ -303,21 +303,20 @@ static void uart2_rx_entry(void* parameter)
                     }
                     //rt_kprintf("mb_send %d\n", mavsz);
                 }
-                else {
-                    rt_uint8_t* pkg = (rt_uint8_t*) rt_mp_alloc(mpUart3Tx, 0);
-                    if (!pkg) {rt_kprintf("tRX2: no mem for TX3\n"); continue;}
+                
+                rt_uint8_t* pkg = (rt_uint8_t*) rt_mp_alloc(mpUart3Tx, 0);
+                if (!pkg) {rt_kprintf("tRX2: no mem for TX3\n"); continue;}
 
-                    rt_memcpy(ppkg, pbuf+rxInBuf, mavsz);
-                    //print_rawdata(ppkg, mavsz, "rx3");
-                    //rt_kprintf("rx3(mavlink): id(%d) len(%d)\n", ppkg[5], mavsz);
+                rt_memcpy(ppkg, pbuf+rxInBuf, mavsz);
+                //print_rawdata(ppkg, mavsz, "rx3");
+                //rt_kprintf("rx3(mavlink): id(%d) len(%d)\n", ppkg[5], mavsz);
 
-                    rt_memcpy(pkg, ppkg, mavsz);
-                    if (RT_EOK != rt_mb_send(mbUart3Tx, (rt_ubase_t)pkg)){
-                        rt_kprintf("tRX2: mb wrong for TX3\n");
-                        rt_mp_free(pkg);
-                    }
-                    //rt_kprintf("mb_send %d\n", mavsz);
+                rt_memcpy(pkg, ppkg, mavsz);
+                if (RT_EOK != rt_mb_send(mbUart3Tx, (rt_ubase_t)pkg)){
+                    rt_kprintf("tRX2: mb wrong for TX3\n");
+                    rt_mp_free(pkg);
                 }
+                //rt_kprintf("mb_send %d\n", mavsz);
            }
         }
         
