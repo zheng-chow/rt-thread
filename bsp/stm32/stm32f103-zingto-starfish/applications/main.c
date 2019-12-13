@@ -511,11 +511,28 @@ static void uart4_rx_entry(void* parameter)
     }
 }
 
-int main(void)
+static  rt_device_t pWDT = RT_NULL;
+
+static void idle_hook(void)
 {
-    int count = 1;
-    
+    rt_device_control(pWDT, RT_DEVICE_CTRL_WDT_KEEPALIVE, NULL);
+//    rt_kprintf("feed the dog!\n ");
+}
+
+int main(void)
+{   
     rt_err_t retval = RT_EOK;
+    rt_uint32_t timeout = 1;
+    
+    pWDT = rt_device_find("wdt");
+    RT_ASSERT(pWDT != RT_NULL);
+    
+    retval = rt_device_init(pWDT);
+    retval = rt_device_control(pWDT, RT_DEVICE_CTRL_WDT_SET_TIMEOUT, &timeout);
+    retval = rt_device_control(pWDT, RT_DEVICE_CTRL_WDT_START, RT_NULL);
+    rt_thread_idle_sethook(idle_hook);
+    rt_kprintf("Set WatchDog Complate!\n");
+    
     /* set LED0 pin mode to output */
     rt_pin_mode(LED0_PIN, PIN_MODE_OUTPUT);
     
@@ -558,15 +575,15 @@ int main(void)
 		rt_thread_startup(&uart4_rx_thread);
 	}
     
-    while (count++)
+    while (1)
     {
         rt_pin_write(LED0_PIN, PIN_HIGH);
         rt_thread_mdelay(RT_TICK_PER_SECOND);
         rt_pin_write(LED0_PIN, PIN_LOW);
         rt_thread_mdelay(RT_TICK_PER_SECOND);
     }
-    
-    return RT_EOK;
+
+    // Never reach here.
 }
 
 int cmd_mavlink(int argc, char **argv)
