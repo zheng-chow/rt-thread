@@ -15,14 +15,28 @@
 /* defined the LED pin: PA5 */
 #define LED0_PIN     GET_PIN(B, 4)
 #define PWRSEL_PIN	 GET_PIN(B, 6)
+#define PVD_PIN      GET_PIN(B, 7)
+
+void PVD_IRQHandler(void)
+{
+    HAL_PWR_PVD_IRQHandler();
+}
+
+void HAL_PWR_PVDCallback(void)
+{
+    rt_kprintf("Enter PVD IRQHandler: %d\n", rt_pin_read(PVD_PIN));
+
+}
+
+
 
 int main(void)
 {
     int count = 1;
     /* set LED0 pin mode to output */
     rt_pin_mode(LED0_PIN, PIN_MODE_OUTPUT);
-		rt_pin_write(PWRSEL_PIN, PIN_HIGH);
-		rt_pin_mode(PWRSEL_PIN, PIN_MODE_OUTPUT);
+	rt_pin_write(PWRSEL_PIN, PIN_HIGH);
+	rt_pin_mode(PWRSEL_PIN, PIN_MODE_OUTPUT);
 	
     while (count++)
     {
