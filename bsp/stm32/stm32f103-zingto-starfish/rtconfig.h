@@ -113,19 +113,6 @@
 
 /* Utilities */
 
-#define RT_USING_ULOG
-#define ULOG_OUTPUT_LVL_D
-#define ULOG_OUTPUT_LVL 7
-#define ULOG_ASSERT_ENABLE
-#define ULOG_LINE_BUF_SIZE 128
-
-/* log format */
-
-#define ULOG_USING_COLOR
-#define ULOG_OUTPUT_TIME
-#define ULOG_OUTPUT_LEVEL
-#define ULOG_OUTPUT_TAG
-#define ULOG_BACKEND_USING_CONSOLE
 
 /* RT-Thread online packages */
 
@@ -189,6 +176,7 @@
 #define BSP_UART3_TX_USING_DMA
 #define BSP_USING_UART4
 #define BSP_UART4_RX_USING_DMA
+#define BSP_USING_WDT
 
 /* Board extended module Drivers */
 

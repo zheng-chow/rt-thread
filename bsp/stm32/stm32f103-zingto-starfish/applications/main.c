@@ -223,6 +223,11 @@ static void uart2_rx_entry(void* parameter)
     
     rt_device_open(pUart2, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX);
     
+    // set uart2's baudrate to 57600
+    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
+    config.baud_rate = BAUD_RATE_57600;
+    rt_device_control(pUart2, RT_DEVICE_CTRL_CONFIG, &config);
+    
     sUart2 = rt_sem_create("sRX2", 0, RT_IPC_FLAG_FIFO);
 
     rt_device_set_rx_indicate(pUart2, rx2_hook);
@@ -360,6 +365,11 @@ static void uart3_rx_entry(void* parameter)
     RT_ASSERT(pUart3 != RT_NULL);
     
     rt_device_open(pUart3, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX);
+    
+    // set uart3's baudrate to 57600
+    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
+    config.baud_rate = BAUD_RATE_57600;
+    rt_device_control(pUart3, RT_DEVICE_CTRL_CONFIG, &config);
     
     sUart3 = rt_sem_create("u3rx", 0, RT_IPC_FLAG_FIFO);
 
@@ -505,7 +515,7 @@ static void uart4_rx_entry(void* parameter)
             
             if (RT_EOK != rt_mb_send(mbUart2Tx, (rt_ubase_t)pkg)){
                 rt_kprintf("tRX4: mb wrong\n");
-                rt_mp_free(pkg);                    
+                rt_mp_free(pkg);
             }
         }
     }

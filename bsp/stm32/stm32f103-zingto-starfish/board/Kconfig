@@ -70,6 +70,11 @@ menu "On-chip Peripheral Drivers"
                 default n
         endif
 
+    config BSP_USING_WDT
+        bool "Enable Watchdog Timer"
+        select RT_USING_WDT
+        default y
+
     source "../libraries/HAL_Drivers/Kconfig"
        
 endmenu
