@@ -180,6 +180,10 @@ int main(void)
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9|GPIO_PIN_10);
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2|GPIO_PIN_3);
     
+    /* driven led off */
+    rt_pin_write(LED1_PIN, PIN_LOW);
+    rt_pin_write(LED0_PIN, PIN_LOW);
+    
     /* Enter Stop Mode */
     HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
     
