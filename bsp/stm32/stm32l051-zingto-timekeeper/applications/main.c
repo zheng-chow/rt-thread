@@ -157,6 +157,16 @@ int main(void)
     /* disable PMOS to avoid backup bat power the entire system */
     rt_pin_write(PWRSEL_PIN, PIN_HIGH);
     
+    /* show the system reset */
+    rt_pin_write(LED0_PIN, PIN_HIGH);
+    rt_pin_write(LED1_PIN, PIN_HIGH);
+    
+    rt_thread_delay(RT_TICK_PER_SECOND/10);
+    
+    /* show the system reset */
+    rt_pin_write(LED0_PIN, PIN_LOW);
+    rt_pin_write(LED1_PIN, PIN_LOW);    
+    
     semPVD = rt_sem_create("semPVD", 0, RT_IPC_FLAG_FIFO);
     RT_ASSERT(semPVD != RT_NULL);
     
@@ -171,19 +181,21 @@ int main(void)
     else {
         LOG_I("Power up, in Normal mode");
     }
+    
+    rt_kprintf("RCC->CSR:\t0x%08x\n", RCC->CSR);
+    rt_kprintf("FLASH->OPTR:\t0x%08x\n", FLASH->OPTR);
 	
     rt_sem_take(semPVD, RT_WAITING_FOREVER);
     
     LOG_I("Detect Power Off, System enter STOP mode in moment");
     
     /* config the uart GPIO to prevent leak current */
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9|GPIO_PIN_10);
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2|GPIO_PIN_3);
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9 | GPIO_PIN_10);
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2 | GPIO_PIN_3);
     
-    /* driven led off */
-    rt_pin_write(LED1_PIN, PIN_LOW);
-    rt_pin_write(LED0_PIN, PIN_LOW);
-    
+    /* deinit the GPIO for LEDs */
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_4 | GPIO_PIN_5);
+
     /* Enter Stop Mode */
     HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
     
