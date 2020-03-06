@@ -38,7 +38,7 @@
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 128
 #define RT_CONSOLE_DEVICE_NAME "uart1"
-#define RT_VER_NUM 0x40002
+#define RT_VER_NUM 0x40003
 #define ARCH_ARM
 #define RT_USING_CPU_FFS
 #define ARCH_ARM_CORTEX_M
@@ -80,8 +80,9 @@
 #define RT_USING_SERIAL
 #define RT_SERIAL_USING_DMA
 #define RT_SERIAL_RB_BUFSZ 64
+#define RT_USING_I2C
+#define RT_USING_I2C_BITOPS
 #define RT_USING_PIN
-#define RT_USING_SPI
 
 /* Using USB */
 
@@ -109,6 +110,19 @@
 
 /* Utilities */
 
+#define RT_USING_ULOG
+#define ULOG_OUTPUT_LVL_D
+#define ULOG_OUTPUT_LVL 7
+#define ULOG_ASSERT_ENABLE
+#define ULOG_LINE_BUF_SIZE 128
+
+/* log format */
+
+#define ULOG_USING_COLOR
+#define ULOG_OUTPUT_TIME
+#define ULOG_OUTPUT_LEVEL
+#define ULOG_OUTPUT_TAG
+#define ULOG_BACKEND_USING_CONSOLE
 
 /* RT-Thread online packages */
 
@@ -143,6 +157,8 @@
 
 /* peripheral libraries and drivers */
 
+#define PKG_USING_AT24CXX
+#define PKG_USING_AT24CXX_LATEST_VERSION
 
 /* miscellaneous packages */
 
@@ -162,10 +178,9 @@
 #define BSP_USING_UART
 #define BSP_USING_UART1
 #define BSP_UART1_RX_USING_DMA
-#define BSP_USING_SPI
-#define BSP_USING_SPI1
-#define BSP_SPI1_TX_USING_DMA
-#define BSP_SPI1_RX_USING_DMA
+#define BSP_USING_I2C1
+#define BSP_I2C1_SCL_PIN 22
+#define BSP_I2C1_SDA_PIN 23
 
 /* Board extended module Drivers */
 
