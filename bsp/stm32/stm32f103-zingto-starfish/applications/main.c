@@ -223,10 +223,10 @@ static void uart2_rx_entry(void* parameter)
     
     rt_device_open(pUart2, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX);
     
-//    // set uart2's baudrate to 57600
-//    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
-//    config.baud_rate = BAUD_RATE_57600;
-//    rt_device_control(pUart2, RT_DEVICE_CTRL_CONFIG, &config);
+    // set uart2's baudrate to 57600
+    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
+    config.baud_rate = BAUD_RATE_57600;
+    rt_device_control(pUart2, RT_DEVICE_CTRL_CONFIG, &config);
     
     sUart2 = rt_sem_create("sRX2", 0, RT_IPC_FLAG_FIFO);
 
@@ -291,13 +291,13 @@ static void uart2_rx_entry(void* parameter)
                 if (pbuf[5] == 0x4C) {
                     rt_uint8_t* pkg = (rt_uint8_t*) rt_mp_alloc(mpUart4Tx, 0);
                     if (!pkg) {rt_kprintf("tRX2: no mem for TX4\n"); continue;}
-                    
+
                     rt_memcpy(ppkg, pbuf+rxInBuf, mavsz);
                     
                     float fVal = 0.0f;
                     rt_uint8_t   SGBC32[5] = {0xE1, 0x1E, 0x00, 0xF1, 0x1F};
                     fVal = *(float*)&ppkg[6];
-                    rt_kprintf("tRX2: CTRL(0x%02X)\n", bufsz, (rt_uint8_t)fVal);
+                    rt_kprintf("tRX2: CTRL(%d)\n", (rt_uint8_t)fVal);
                     SGBC32[2] = (rt_uint8_t)fVal;
                     
                     rt_memcpy(pkg, SGBC32, sizeof(SGBC32));
@@ -366,10 +366,10 @@ static void uart3_rx_entry(void* parameter)
     
     rt_device_open(pUart3, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX);
     
-//    // set uart3's baudrate to 57600
-//    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
-//    config.baud_rate = BAUD_RATE_57600;
-//    rt_device_control(pUart3, RT_DEVICE_CTRL_CONFIG, &config);
+    // set uart3's baudrate to 57600
+    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
+    config.baud_rate = BAUD_RATE_57600;
+    rt_device_control(pUart3, RT_DEVICE_CTRL_CONFIG, &config);
     
     sUart3 = rt_sem_create("u3rx", 0, RT_IPC_FLAG_FIFO);
 

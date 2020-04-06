@@ -40,9 +40,9 @@
 
 #define RT_USING_DEVICE
 #define RT_USING_CONSOLE
-#define RT_CONSOLEBUF_SIZE 128
+#define RT_CONSOLEBUF_SIZE 1024
 #define RT_CONSOLE_DEVICE_NAME "uart1"
-#define RT_VER_NUM 0x40002
+#define RT_VER_NUM 0x40003
 #define ARCH_ARM
 #define RT_USING_CPU_FFS
 #define ARCH_ARM_CORTEX_M
@@ -83,7 +83,7 @@
 #define RT_PIPE_BUFSZ 512
 #define RT_USING_SERIAL
 #define RT_SERIAL_USING_DMA
-#define RT_SERIAL_RB_BUFSZ 1024
+#define RT_SERIAL_RB_BUFSZ 2048
 #define RT_USING_PIN
 #define RT_USING_WDT
 
@@ -176,6 +176,7 @@
 #define BSP_UART3_TX_USING_DMA
 #define BSP_USING_UART4
 #define BSP_UART4_RX_USING_DMA
+#define BSP_UART4_TX_USING_DMA
 #define BSP_USING_WDT
 
 /* Board extended module Drivers */

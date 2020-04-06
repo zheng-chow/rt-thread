@@ -151,6 +151,9 @@
 
 /* tools packages */
 
+#define PKG_USING_QRCODE
+#define PKG_QRCODE_SAMPLE
+#define PKG_USING_QRCODE_LATEST_VERSION
 
 /* system packages */
 

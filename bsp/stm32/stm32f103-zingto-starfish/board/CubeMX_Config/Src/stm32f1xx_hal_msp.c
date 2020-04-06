@@ -110,7 +110,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 
         GPIO_InitStruct.Pin = GPIO_PIN_10;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
         /* USER CODE BEGIN USART1_MspInit 1 */
@@ -138,7 +138,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 
         GPIO_InitStruct.Pin = GPIO_PIN_3;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
         /* USER CODE BEGIN USART2_MspInit 1 */
@@ -166,7 +166,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 
         GPIO_InitStruct.Pin = GPIO_PIN_11;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
         /* USER CODE BEGIN USART3_MspInit 1 */
@@ -194,7 +194,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 
         GPIO_InitStruct.Pin = GPIO_PIN_11;
         GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-        GPIO_InitStruct.Pull = GPIO_NOPULL;
+        GPIO_InitStruct.Pull = GPIO_PULLUP;
         HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
         /* USER CODE BEGIN UART4_MspInit 1 */

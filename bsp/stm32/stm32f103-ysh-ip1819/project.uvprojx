@@ -10,7 +10,6 @@
       <TargetName>rt-thread</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060300::V5.06 update 3 (build 300)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F103CB</Device>
@@ -335,7 +334,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F103xB, USE_HAL_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>.;..\..\..\include;applications;board;board\CubeMX_Config\Inc;..\libraries\HAL_Drivers;..\libraries\HAL_Drivers\config;packages\at24cxx-latest;..\..\..\libcpu\arm\common;..\..\..\libcpu\arm\cortex-m3;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\finsh;..\..\..\components\libc\compilers\common;..\..\..\components\utilities\ulog;..\libraries\STM32F1xx_HAL\CMSIS\Device\ST\STM32F1xx\Include;..\libraries\STM32F1xx_HAL\STM32F1xx_HAL_Driver\Inc;..\libraries\STM32F1xx_HAL\CMSIS\Include</IncludePath>
+              <IncludePath>.;..\..\..\include;applications;board;board\CubeMX_Config\Inc;..\libraries\HAL_Drivers;..\libraries\HAL_Drivers\config;packages\at24cxx-latest;packages\qrcode-latest\inc;..\..\..\libcpu\arm\common;..\..\..\libcpu\arm\cortex-m3;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\finsh;..\..\..\components\libc\compilers\common;..\..\..\components\utilities\ulog;..\libraries\STM32F1xx_HAL\CMSIS\Device\ST\STM32F1xx\Include;..\libraries\STM32F1xx_HAL\STM32F1xx_HAL_Driver\Inc;..\libraries\STM32F1xx_HAL\CMSIS\Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -455,11 +454,6 @@
           <GroupName>Applications</GroupName>
           <Files>
             <File>
-              <FileName>main.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>applications\main.c</FilePath>
-            </File>
-            <File>
               <FileName>cmd_eefw.c</FileName>
               <FileType>1</FileType>
               <FilePath>applications\cmd_eefw.c</FilePath>
@@ -467,7 +461,12 @@
             <File>
               <FileName>cmd_icplus.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\applications\cmd_icplus.c</FilePath>
+              <FilePath>applications\cmd_icplus.c</FilePath>
+            </File>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>applications\main.c</FilePath>
             </File>
             <File>
               <FileName>ip1819fw.s</FileName>
@@ -523,6 +522,21 @@
               <FileName>at24cxx.c</FileName>
               <FileType>1</FileType>
               <FilePath>packages\at24cxx-latest\at24cxx.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>qrcode</GroupName>
+          <Files>
+            <File>
+              <FileName>qrcode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>packages\qrcode-latest\src\qrcode.c</FilePath>
+            </File>
+            <File>
+              <FileName>qrcode_sample.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>packages\qrcode-latest\samples\qrcode_sample.c</FilePath>
             </File>
           </Files>
         </Group>

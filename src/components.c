@@ -217,7 +217,7 @@ int rtthread_startup(void)
 {
     rt_hw_interrupt_disable();
 
-    /* board level initialization
+    /* board level initialization 
      * NOTE: please initialize heap inside board initialization.
      */
     rt_hw_board_init();
