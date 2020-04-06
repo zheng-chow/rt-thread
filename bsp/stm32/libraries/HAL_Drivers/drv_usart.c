@@ -1054,11 +1054,7 @@ int rt_hw_usart_init(void)
         uart_obj[i].config = &uart_config[i];
         uart_obj[i].serial.ops    = &stm32_uart_ops;
         uart_obj[i].serial.config = config;
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> upstream/master
         /* register UART device */
         result = rt_hw_serial_register(&uart_obj[i].serial, uart_obj[i].config->name,
                                        RT_DEVICE_FLAG_RDWR
