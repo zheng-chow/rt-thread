@@ -39,7 +39,7 @@ typedef struct __PTZ_SendPacket
 }ptz_serialctrlpkt;
 #pragma pack(4)
 
-const float ZOOM2RATIO[30] = {  1.0f,   0.7f,   0.5f,   0.4f,   0.4f,   0.4f,
+const float ZOOM2RATIO[30] = {  1.0f,   0.6f,   0.5f,   0.4f,   0.35f,   0.3f,
                                 0.3f,   0.3f,   0.3f,   0.25f,  0.25f,  0.25f,
                                 0.2f,   0.2f,   0.2f,   0.15f,  0.15f,  0.15f,
                                 0.1f,   0.1f,   0.1f,   0.1f,   0.1f,   0.1f,

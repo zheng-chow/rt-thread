@@ -283,6 +283,16 @@ static void trace_control_entry(void* parameter)
                 rt_sem_release(env->sh_ptz);
                 LOG_D("tracing %d %d 0x%02X, 0.%02d", env->trck_err_x, env->trck_err_y, response.status, response.confidence*100);
             }
+            else if (response.status == 0x03) {
+                env->trck_lost = RT_FALSE;
+                env->trck_incharge = RT_TRUE;
+
+                env->trck_err_x = 0;
+                env->trck_err_y = 0;
+                
+                rt_sem_release(env->sh_ptz);
+                LOG_D("try to regain target, 0x%02X",response.status);
+            }
             else {
 
                 /* update enviroment variables */
@@ -294,6 +304,7 @@ static void trace_control_entry(void* parameter)
 
                 rt_sem_release(env->sh_ptz);
                 LOG_W("lost target");
+                LOG_D("tracing %d %d 0x%02X, 0.%02d", env->trck_err_x, env->trck_err_y, response.status, response.confidence*100);
                 
                 on_tracing = RT_FALSE;
             }

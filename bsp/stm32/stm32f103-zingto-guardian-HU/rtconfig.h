@@ -16,8 +16,6 @@
 #define RT_USING_IDLE_HOOK
 #define RT_IDLE_HOOK_LIST_SIZE 4
 #define IDLE_THREAD_STACK_SIZE 256
-#define RT_DEBUG
-#define RT_DEBUG_COLOR
 
 /* Inter-Thread communication */
 
@@ -30,25 +28,24 @@
 /* Memory Management */
 
 #define RT_USING_MEMPOOL
+#define RT_USING_MEMHEAP
 #define RT_USING_SMALL_MEM
 #define RT_USING_HEAP
 
 /* Kernel Device Object */
 
 #define RT_USING_DEVICE
-#define RT_USING_CONSOLE
-#define RT_CONSOLEBUF_SIZE 128
-#define RT_CONSOLE_DEVICE_NAME "uart2"
 #define RT_VER_NUM 0x40003
 #define ARCH_ARM
+#define RT_USING_CPU_FFS
 #define ARCH_ARM_CORTEX_M
-#define ARCH_ARM_CORTEX_M0
+#define ARCH_ARM_CORTEX_M3
 
 /* RT-Thread Components */
 
 #define RT_USING_COMPONENTS_INIT
 #define RT_USING_USER_MAIN
-#define RT_MAIN_THREAD_STACK_SIZE 1024
+#define RT_MAIN_THREAD_STACK_SIZE 2048
 #define RT_MAIN_THREAD_PRIORITY 10
 
 /* C++ features */
@@ -56,18 +53,6 @@
 
 /* Command shell */
 
-#define RT_USING_FINSH
-#define FINSH_THREAD_NAME "tshell"
-#define FINSH_USING_HISTORY
-#define FINSH_HISTORY_LINES 5
-#define FINSH_USING_SYMTAB
-#define FINSH_USING_DESCRIPTION
-#define FINSH_THREAD_PRIORITY 20
-#define FINSH_THREAD_STACK_SIZE 2048
-#define FINSH_CMD_SIZE 80
-#define FINSH_USING_MSH
-#define FINSH_USING_MSH_DEFAULT
-#define FINSH_ARG_MAX 10
 
 /* Device virtual file system */
 
@@ -77,10 +62,14 @@
 #define RT_USING_DEVICE_IPC
 #define RT_PIPE_BUFSZ 512
 #define RT_USING_SERIAL
-#define RT_SERIAL_RB_BUFSZ 64
-#define RT_USING_CAN
-#define RT_CAN_USING_HDR
+#define RT_SERIAL_USING_DMA
+#define RT_SERIAL_RB_BUFSZ 1024
 #define RT_USING_PIN
+#define RT_USING_WDT
+#define RT_USING_HWCRYPTO
+#define RT_HWCRYPTO_DEFAULT_NAME "hwcryto"
+#define RT_HWCRYPTO_IV_MAX_SIZE 16
+#define RT_HWCRYPTO_KEYBIT_MAX_SIZE 256
 
 /* Using USB */
 
@@ -108,19 +97,6 @@
 
 /* Utilities */
 
-#define RT_USING_ULOG
-#define ULOG_OUTPUT_LVL_D
-#define ULOG_OUTPUT_LVL 7
-#define ULOG_ASSERT_ENABLE
-#define ULOG_LINE_BUF_SIZE 128
-
-/* log format */
-
-#define ULOG_USING_COLOR
-#define ULOG_OUTPUT_TIME
-#define ULOG_OUTPUT_LEVEL
-#define ULOG_OUTPUT_TAG
-#define ULOG_BACKEND_USING_CONSOLE
 
 /* RT-Thread online packages */
 
@@ -162,23 +138,29 @@
 /* samples: kernel and components samples */
 
 #define SOC_FAMILY_STM32
-#define SOC_SERIES_STM32F0
+#define SOC_SERIES_STM32F1
 
 /* Hardware Drivers Config */
 
-#define SOC_STM32F072RB
-
-/* Onboard Peripheral Drivers */
+#define SOC_STM32F103xE
 
 /* On-chip Peripheral Drivers */
 
 #define BSP_USING_GPIO
-#define BSP_USING_CAN
-#define BSP_USING_CAN_F0
 #define BSP_USING_UART
+#define BSP_USING_UART1
+#define BSP_UART1_RX_USING_DMA
 #define BSP_USING_UART2
-
-/* Board extended module Drivers */
-
+#define BSP_UART2_RX_USING_DMA
+#define BSP_UART2_TX_USING_DMA
+#define BSP_USING_UART3
+#define BSP_UART3_RX_USING_DMA
+#define BSP_UART3_TX_USING_DMA
+#define BSP_USING_UART4
+#define BSP_UART4_RX_USING_DMA
+#define BSP_USING_UART5
+#define BSP_UART5_RX_USING_DMA
+#define BSP_USING_WDT
+#define BSP_USING_UDID
 
 #endif

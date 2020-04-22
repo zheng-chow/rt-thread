@@ -454,7 +454,7 @@ void camera_resolving_entry(void* parameter)
                     nZoom = 0xFF;   // invailed zoom position.
                 
                 env->cam_zoom_pos = nZoom;
-                LOG_D("zoom, %d", nZoom);
+                LOG_W("zoom, %d", nZoom);
                 
                 env->cam_getpos_tick = rt_tick_get();
 

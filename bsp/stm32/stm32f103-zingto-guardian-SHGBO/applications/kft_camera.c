@@ -204,9 +204,9 @@ void camera_resolving_entry(void* parameter)
     env->ev_camera = rt_event_create(CAMERA_EVENT_NAME, RT_IPC_FLAG_FIFO);
     RT_ASSERT(env->ev_camera != RT_NULL);
     
-    // set uart in 9600     , 8N1.
+    // set uart in 115200     , 8N1.
     struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
-    config.baud_rate = BAUD_RATE_9600;
+    config.baud_rate = BAUD_RATE_115200;
     rt_device_control(dev, RT_DEVICE_CTRL_CONFIG, &config);
     
     rt_device_set_rx_indicate(dev, uart_hook_callback);

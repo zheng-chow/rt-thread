@@ -39,7 +39,7 @@ typedef struct __PTZ_SendPacket
 }ptz_serialctrlpkt;
 #pragma pack(4)
 
-const float ZOOM2RATIO[30] = {  1.0f,   0.6f,   0.5f,   0.4f,   0.35f,   0.3f,
+const float ZOOM2RATIO[30] = {  1.0f,   0.7f,   0.5f,   0.4f,   0.4f,   0.4f,
                                 0.3f,   0.3f,   0.3f,   0.25f,  0.25f,  0.25f,
                                 0.2f,   0.2f,   0.2f,   0.15f,  0.15f,  0.15f,
                                 0.1f,   0.1f,   0.1f,   0.1f,   0.1f,   0.1f,
@@ -74,24 +74,24 @@ rt_uint8_t calib_protcol[4][PANTILT_CALIB_PKT_SIZE] = {
 };
         
 
-#define PANTILT_UARTPORT_NAME       "uart2"
-#define PANTILT_SEMAPHORE_NAME      "shPTZ"
-#define PANTILT_SEMAPHORE_RX_NAME   "shPTZrx"
+#define PANTILT_UARTPORT_NAME "uart2"
+#define PANTILT_SEMAPHORE_NAME "shPTZ"
+#define PANTILT_SEMAPHORE_RX_NAME "shPTZrx"
 
-#define PANTILT_SEND_MP_NAME        "mpPTZtx"
-#define PANTILT_SEND_MB_NAME        "mbPTZtx"
+#define PANTILT_SEND_MP_NAME "mpPTZtx"
+#define PANTILT_SEND_MB_NAME "mbPTZtx"
 
-#define PANTILT_BUFFER_SIZE         (128)
-#define PANTILT_RX_TIMEOUT          (10)
+#define PANTILT_BUFFER_SIZE     (128)
+#define PANTILT_RX_TIMEOUT      (10)
 
 #define PANTILT_PKT_HEADER          (0x6D402D3E)
 #define IRSENSOR_COLOR_PKT_HEADER   (0x05AA)
 #define IRSENSOR_ZOOM_PKT_HEADER    (0x0CAA)
 #define PANTILT_CALIB_PKT_HEADER    (0x1EE1)
 
-#define PANTILT_VALUE_MAXIMUM       (500)
-#define PANTILT_VALUE_MININUM       (-500)
-#define PANTILT_VALUE_RATIO         (0.7142857f)
+#define PANTILT_VALUE_MAXIMUM   (500)
+#define PANTILT_VALUE_MININUM   (-500)
+#define PANTILT_VALUE_RATIO     (0.7142857f)
 
 /* defined the LED pin: PA0 */
 #define LED_PIN    GET_PIN(A, 0)
@@ -280,16 +280,9 @@ void pantilt_resolving_entry(void* parameter)
                 env->trck_incharge = RT_FALSE;
                 env->trck_lost = RT_FALSE;
                 
-                LOG_W("tracing stop or lost...");
-                
-                for (int i = 0; i < 3; i++) {
-                    
-                    rt_thread_delay(10);
-                    
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);                    
-                }
+                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+                rt_memcpy(pbuf, &ctrlpkt, pktsz);
+                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
             }
             // todo.
         }
@@ -378,22 +371,22 @@ void pantilt_resolving_entry(void* parameter)
                             
                 ctrlpkt.HEADER = PANTILT_PKT_HEADER;
 
-                dval_roll = env->ch_value[0] - SBUS_VALUE_MEDIAN;    // roll
-                if (abs(dval_roll) < SBUS_VALUE_IGNORE * 3)
-                    dval_roll = 0;
-                else
-                {
-                    if (dval_roll < 0)
-                        dval_roll = PANTILT_VALUE_MININUM;
-                    else
-                        dval_roll = PANTILT_VALUE_MAXIMUM;
-                }
+//                dval_roll = env->ch_value[0] - SBUS_VALUE_MEDIAN;    // roll
+//                if (abs(dval_roll) < SBUS_VALUE_IGNORE * 3)
+//                    dval_roll = 0;
+//                else
+//                {
+//                    if (dval_roll < 0)
+//                        dval_roll = PANTILT_VALUE_MININUM;
+//                    else
+//                        dval_roll = PANTILT_VALUE_MAXIMUM;
+//                }
                 
-                dval_pitch = env->ch_value[1] - SBUS_VALUE_MEDIAN;    // pitch
+                dval_pitch = env->ch_value[1 + 7] - SBUS_VALUE_MEDIAN;    // pitch
                 if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
                     dval_pitch = 0;
                
-                dval_yaw = env->ch_value[3] - SBUS_VALUE_MEDIAN;    // yaw
+                dval_yaw = env->ch_value[3 + 7] - SBUS_VALUE_MEDIAN;    // yaw
                 if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
                     dval_yaw = 0;
                 

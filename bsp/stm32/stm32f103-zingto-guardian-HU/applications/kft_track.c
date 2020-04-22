@@ -13,7 +13,6 @@
 #include <board.h>
 
 #include "guardian.h"
-#include "general_pid.h"
 
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "Track"
@@ -117,8 +116,6 @@ static void track_data_recv_entry(void* parameter)
     rt_uint8_t lost_count = 0;
     rt_bool_t on_tracing = RT_FALSE;
     
-    PID_t pid_x, pid_y;
-    
     env = (struct guardian_environment*)parameter;
     RT_ASSERT(env != RT_NULL);
     
@@ -127,18 +124,6 @@ static void track_data_recv_entry(void* parameter)
     
     dev = rt_device_find(TRACK_UARTPORT_NAME);
     RT_ASSERT(dev != RT_NULL);
-    
-    pid_init(&pid_x, 1.4f, 0.02f, 0.5f);
-    pid_init(&pid_y, 1.4f, 0.02f, 0.5f);
-    
-    pid_setThreshold(&pid_x, 500.0f, 100.0f, 0.02f);
-    pid_setThreshold(&pid_y, 500.0f, 100.0f, 0.02f);
-    
-    pid_setSetpoint(&pid_x, 0.0f);
-    pid_setSetpoint(&pid_y, 0.0f);
-    
-    pid_enable(&pid_x, RT_TRUE);
-    pid_enable(&pid_y, RT_TRUE);
     
     LOG_I("recv sub-thread, start!");
     
@@ -166,23 +151,16 @@ static void track_data_recv_entry(void* parameter)
         
         szbuf = 0;
         // check packet addr byte, shouled 0x01.
-        if (pbuf[1] != TRACK_ACK_PKT_ADDR) {
-            LOG_D("tracing packet addr %d, error\n", pbuf[1]);
+        if (pbuf[1] != TRACK_ACK_PKT_ADDR)
             continue;
-        }
         
         if ((pbuf[6] & 0x02) != 0x00)
         {
             on_tracing = RT_TRUE;
             lost_count = 0;
             
-            float deffer_x, deffer_y;
-            
-            deffer_x = (float)*(rt_int16_t*)&pbuf[2];
-            deffer_y = (float)*(rt_int16_t*)&pbuf[4];
-            
-            env->trck_err_x = pid_update(&pid_x, deffer_x);
-			env->trck_err_y = pid_update(&pid_y, deffer_y);
+            env->trck_err_x = *(rt_int16_t*)&pbuf[2];
+			env->trck_err_y = *(rt_int16_t*)&pbuf[4];
             
             LOG_D("tracing %d %d", env->trck_err_x, env->trck_err_y);
             
@@ -197,9 +175,6 @@ static void track_data_recv_entry(void* parameter)
                 continue;
             
             on_tracing = RT_FALSE;
-            
-            pid_setICS(&pid_x, 0.0f);
-            pid_setICS(&pid_y, 0.0f);
             
             if (env->trck_incharge == RT_TRUE)
             {
@@ -301,7 +276,7 @@ void track_resolving_entry(void* parameter)
             ctrlpkt.set_mode = 0x71;
             ctrlpkt.set_fuction = 0xFF;
             
-            LOG_D("tracker searching target.");
+            LOG_D("TRACK_ACTION_PREPARE");
             
             env->trck_prepare = RT_TRUE;
         }
@@ -313,7 +288,7 @@ void track_resolving_entry(void* parameter)
 			ctrlpkt.__reserved3 = 0x01;
 			ctrlpkt.set_trace_mode = 0x3C;		// medium size trace window.
             
-            LOG_D("tracker start tracing.");
+            LOG_D("TRACK_ACTION_TRACE_START");
             
             env->trck_prepare = RT_FALSE;
             env->trck_incharge = RT_TRUE;
@@ -322,31 +297,10 @@ void track_resolving_entry(void* parameter)
         {
             ctrlpkt.set_mode = 0x26;			// 0x71 Trace Mode.
             
-            LOG_D("tracker stop tracing.");
+            LOG_D("TRACK_ACTION_TRACE_STOP");
             
             env->trck_prepare = RT_FALSE;
             env->trck_incharge = RT_FALSE;
-        }
-        else if (env->trck_action == TRACK_ACTION_RECORD_ON)
-        {
-            ctrlpkt.set_mode = 0x7C;
-            ctrlpkt.set_fuction = 0x01;
-            ctrlpkt.set_offset_x = 0x0258;
-            
-            LOG_D("tracker start recording video.");
-        }
-        else if (env->trck_action == TRACK_ACTION_RECORD_OFF)
-        {
-            ctrlpkt.set_mode = 0x7C;
-            
-            LOG_D("tracker stop recording video.");
-        }
-        else if (env->trck_action == TRACK_ACTION_SNAP)
-        {
-            ctrlpkt.set_mode = 0x7C;
-            ctrlpkt.set_fuction = 0x02;
-            
-            LOG_D("tracker snap a picture.");
         }
         else
             continue;
