@@ -20,15 +20,6 @@
 #define DBG_COLOR
 #include <rtdbg.h>
 
-const char XUANZHAN_CMD_SNAP[] = "<snap quality=\"10\" ></snap>\r\n";
-const char XUANZHAN_CMD_RECORD_ON[] = "<?xml version=\"1.0\" encoding=\"GB2312\" ?><?xml version=\"1.0\" encoding=\"GB2312\" ?><record cmd=\"start\"></record>\r\n";
-const char XUANZHAN_CMD_RECORD_OFF[] = "<?xml version=\"1.0\" encoding=\"GB2312\" ?><?xml version=\"1.0\" encoding=\"GB2312\" ?><record cmd=\"stop\"></record>\r\n";
-
-const char XUANZHAN_LOGO_RECORD_ON[] = "<?xml version=\"1.0\" encoding=\"GB2312\" ?><icon name=\"record_l\"  posx=\"10\" posy=\"10\" cmd=\"show\" ></icon>\r\n";
-const char XUANZHAN_LOGO_RECORD_OFF[] = "<?xml version=\"1.0\" encoding=\"GB2312\" ?><icon name=\"record_l\"  posx=\"10\" posy=\"10\" cmd=\"hide\" ></icon>\r\n";
-const char XUANZHAN_LOGO_SNAP_ON[] = "<?xml version=\"1.0\" encoding=\"GB2312\" ?><icon name=\"photo_l\"  posx=\"10\" posy=\"10\" cmd=\"show\" ></icon>\r\n";
-const char XUANZHAN_LOGO_SNAP_OFF[] = "<?xml version=\"1.0\" encoding=\"GB2312\" ?><icon name=\"photo_l\"  posx=\"10\" posy=\"10\" cmd=\"hide\" ></icon>\r\n";
-
 #define CAMERA_UARTPORT_NAME "uart5"
 #define CAMERA_SEMAPHORE_NAME "shCAM"
 #define CAMERA_EVENT_NAME "evCAM"
@@ -157,26 +148,6 @@ static rt_err_t uart_recv_with_timeout(rt_device_t dev, void * buffer, const rt_
     
     return result;
 }
-static rt_tick_t tm_snap;
-
-void snap_logo_manager_entry(void* parameter)
-{
-    rt_device_t udev = (rt_device_t)parameter;
-    
-    tm_snap = RT_TICK_MAX;
-    
-    while(1)
-    {
-        if (tm_snap != RT_TICK_MAX) {
-            if (rt_tick_get() - tm_snap > RT_TICK_PER_SECOND) {
-                uart_send_with_block(udev, (void *)XUANZHAN_LOGO_SNAP_OFF, sizeof(XUANZHAN_LOGO_SNAP_OFF));
-                tm_snap = RT_TICK_MAX;
-            }
-        }
-        
-        rt_thread_delay(RT_TICK_PER_SECOND / 100);
-    }
-}
 
 void camera_resolving_entry(void* parameter)
 {
@@ -185,7 +156,6 @@ void camera_resolving_entry(void* parameter)
     struct guardian_environment *env = RT_NULL;
     rt_err_t result = RT_EOK;
     rt_uint32_t opcode;
-    rt_thread_t pthread;
     
     env = (struct guardian_environment *)parameter;
     RT_ASSERT(env != RT_NULL);
@@ -204,17 +174,12 @@ void camera_resolving_entry(void* parameter)
     env->ev_camera = rt_event_create(CAMERA_EVENT_NAME, RT_IPC_FLAG_FIFO);
     RT_ASSERT(env->ev_camera != RT_NULL);
     
-    // set uart in 115200     , 8N1.
+    // set uart in 115200, 8N1.
     struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
     config.baud_rate = BAUD_RATE_115200;
     rt_device_control(dev, RT_DEVICE_CTRL_CONFIG, &config);
     
     rt_device_set_rx_indicate(dev, uart_hook_callback);
-    
-    pthread = rt_thread_create("tXZlogo", snap_logo_manager_entry, dev, 2048, 11, 20);
-    RT_ASSERT(pthread != RT_NULL);
-    result = rt_thread_startup(pthread);
-    RT_ASSERT(result == RT_EOK);
     
     LOG_I("initialization finish, start!");
     
@@ -238,25 +203,55 @@ void camera_resolving_entry(void* parameter)
         
         switch(opcode & ~CAMERA_CMD_ZOOM_GETPOS) {
             case CAMERA_CMD_CAPTURE:
-
-                    uart_send_with_block(dev, (void *)XUANZHAN_CMD_SNAP, sizeof(XUANZHAN_CMD_SNAP));
-                    uart_send_with_block(dev, (void *)XUANZHAN_LOGO_SNAP_ON, sizeof(XUANZHAN_LOGO_SNAP_ON));
-                    LOG_D("Xuanzhan_CMD_Snap");
-                    tm_snap = rt_tick_get();
+                uart_clean_recv_buff(dev, pbuf);
+            
+                uart_send_with_block(dev, HI3521D_CMD_CAPTURE, sizeof(HI3521D_CMD_CAPTURE));
+                LOG_D("HI3521D_CMD_CAPTURE");
+            
+                rt_memset(pbuf, 0x00, CAMERA_BUFFER_SIZE);
+                result = uart_recv_with_timeout(dev, pbuf, sizeof(HI3521D_ACK_CAPTURE));
+            
+                if (result != RT_EOK)
+                    LOG_W("timeout!");
+                else if (rt_strncmp(HI3521D_ACK_CAPTURE, (void*)pbuf, sizeof(HI3521D_ACK_CAPTURE) - 2))
+                    LOG_W("invailed!, %-16s", pbuf);
+                else
+                    LOG_D("OK");
                 break;
             
             case CAMERA_CMD_RECORD_ON:
-                    uart_send_with_block(dev, (void *)XUANZHAN_CMD_RECORD_ON, sizeof(XUANZHAN_CMD_RECORD_ON));
-                    uart_send_with_block(dev, (void *)XUANZHAN_LOGO_RECORD_ON, sizeof(XUANZHAN_LOGO_RECORD_ON));
-                    LOG_D("Xuanzhan_CMD_Record_On");                    
+                uart_clean_recv_buff(dev, pbuf);
+            
+                uart_send_with_block(dev, HI3521D_CMD_RECORD_ON, sizeof(HI3521D_CMD_RECORD_ON));
+                LOG_D("HI3521D_CMD_RECORD_ON");
+            
+                rt_memset(pbuf, 0x00, CAMERA_BUFFER_SIZE);
+                result = uart_recv_with_timeout(dev, pbuf, sizeof(HI3521D_ACK_RECORD));
+            
+                if (result != RT_EOK)
+                    LOG_W("timeout!");
+                else if (rt_strncmp(HI3521D_ACK_RECORD, (void*)pbuf, sizeof(HI3521D_ACK_RECORD) - 2))
+                    LOG_W("invailed!, %-16s", pbuf);
+                else
+                    LOG_D("OK");
                 break;
             
             case CAMERA_CMD_RECORD_OFF:
-                    uart_send_with_block(dev, (void *)XUANZHAN_CMD_RECORD_OFF, sizeof(XUANZHAN_CMD_RECORD_OFF));
-                    uart_send_with_block(dev, (void *)XUANZHAN_LOGO_RECORD_OFF, sizeof(XUANZHAN_LOGO_RECORD_OFF));
-                    LOG_D("Xuanzhan_CMD_Record_Off");                    
-                break;        
-
+                uart_clean_recv_buff(dev, pbuf);
+            
+                uart_send_with_block(dev, HI3521D_CMD_RECORD_OFF, sizeof(HI3521D_CMD_RECORD_OFF));
+                LOG_D("HI3521D_CMD_RECORD_OFF");
+            
+                rt_memset(pbuf, 0x00, CAMERA_BUFFER_SIZE);
+                result = uart_recv_with_timeout(dev, pbuf, sizeof(HI3521D_ACK_RECORD));
+            
+                if (result != RT_EOK)
+                    LOG_W("timeout!");
+                else if (rt_strncmp(HI3521D_ACK_RECORD, (void*)pbuf, sizeof(HI3521D_ACK_RECORD) - 2))
+                    LOG_W("invailed!, %-16s", pbuf);
+                else
+                    LOG_D("OK");
+                break;      
             
             case CAMERA_CMD_PIP_MODE1:
                 uart_clean_recv_buff(dev, pbuf);

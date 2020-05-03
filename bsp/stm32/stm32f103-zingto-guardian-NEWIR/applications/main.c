@@ -53,6 +53,8 @@ int main(void)
         env.ch_status[i] = SBUS_IDLE;
     }
     
+    env.irs_color = 1;
+    
     /* set LED0 pin mode to output */
     rt_pin_mode(LED_PIN, PIN_MODE_OUTPUT);
     

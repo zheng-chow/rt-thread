@@ -276,7 +276,7 @@ void sbus_resolving_entry(void* parameter)
                     else
                         ptz_request = RT_FALSE;
                 }
-                break;          
+                break;
             case 5: // done
                 if (pval[i] < SBUS_THRESHOLD_INVAILED)
                     tmp_status = SBUS_INVAILD;
@@ -293,22 +293,22 @@ void sbus_resolving_entry(void* parameter)
                     
                     if (env->ch_status[i] == SBUS_HIGH)
                     {
-                        env->trck_action = TRACK_ACTION_SNAP;       // Use SHGBO Tracker to store video and picture.
-                        trck_request = RT_TRUE;
+                        cam_eval = CAMERA_CMD_CAPTURE;
+                        cam_request = RT_TRUE;
                     }
                     else if (env->ch_status[i] == SBUS_LOW)
                     {
                         if (env->cam_recording)
                         {
-                            env->trck_action = TRACK_ACTION_RECORD_OFF;
+                            cam_eval = CAMERA_CMD_RECORD_OFF;
                             env->cam_recording = RT_FALSE;
                         }
                         else
                         {
-                            env->trck_action = TRACK_ACTION_RECORD_ON;
+                            cam_eval = CAMERA_CMD_RECORD_ON;
                             env->cam_recording = RT_TRUE;
                         }
-                        trck_request = RT_TRUE;
+                        cam_request = RT_TRUE;
                     }
                 }
                 break;

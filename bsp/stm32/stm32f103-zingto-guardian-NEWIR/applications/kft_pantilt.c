@@ -47,22 +47,22 @@ const float ZOOM2RATIO[30] = {  1.0f,   0.6f,   0.5f,   0.4f,   0.35f,   0.3f,
                              };
 const float IR2RATIO = 0.2f;
 
-#define IRSENSOR_COLOR_PKT_SIZE (9)                    
+//#define IRSENSOR_COLOR_PKT_SIZE (9)                    
+
+//rt_uint8_t irs_serialctrlpkt[IRSENSOR_COLOR_PKT_SIZE] = {0xAA, 0x05, 0x01, 0x42, 0x02, 0x00, 0xF4, 0xEB, 0xAA};
                              
-rt_uint8_t irs_serialctrlpkt[IRSENSOR_COLOR_PKT_SIZE] = {0xAA, 0x05, 0x01, 0x42, 0x02, 0x00, 0xF4, 0xEB, 0xAA};
-
-#define IRSENSOR_ZOOM_PKT_SIZE  (16)
-
-rt_uint8_t irs_zoom[8][IRSENSOR_ZOOM_PKT_SIZE] = {
-    {0xAA, 0x0C, 0x01, 0x40, 0x02, 0x00, 0x00, 0x00, 0x00, 0x7F, 0x01, 0x1F, 0x01, 0x99, 0xEB, 0xAA},
-    {0xAA, 0x0C, 0x01, 0x40, 0x02, 0x60, 0x00, 0x48, 0x00, 0x1F, 0x01, 0xD7, 0x00, 0x98, 0xEB, 0xAA},
-    {0xAA, 0x0C, 0x01, 0x40, 0x02, 0x80, 0x00, 0x60, 0x00, 0xFF, 0x00, 0xBF, 0x00, 0x97, 0xEB, 0xAA},
-    {0xAA, 0x0C, 0x01, 0x40, 0x02, 0x90, 0x00, 0x6C, 0x00, 0xEF, 0x00, 0xB3, 0x00, 0x97, 0xEB, 0xAA},
-    {0xAA, 0x0C, 0x01, 0x40, 0x02, 0x9A, 0x00, 0x73, 0x00, 0xE5, 0x00, 0xAB, 0x00, 0x96, 0xEB, 0xAA},
-    {0xAA, 0x0C, 0x01, 0x40, 0x02, 0xA0, 0x00, 0x78, 0x00, 0xDF, 0x00, 0xA7, 0x00, 0x97, 0xEB, 0xAA},
-    {0xAA, 0x0C, 0x01, 0x40, 0x02, 0xA5, 0x00, 0x7B, 0x00, 0xDA, 0x00, 0xA3, 0x00, 0x96, 0xEB, 0xAA},
-    {0xAA, 0x0C, 0x01, 0x40, 0x02, 0xA8, 0x00, 0x7E, 0x00, 0xD7, 0x00, 0xA1, 0x00, 0x97, 0xEB, 0xAA}
+#define IRSENSOR_FRAME_SIZE (10)
+                             
+#define IRSENSOR_COLOR_HEADER   (0x1168)
+rt_uint8_t irs_control_frame[IRSENSOR_FRAME_SIZE];
+                             
+rt_uint8_t irs_color[4][IRSENSOR_FRAME_SIZE] = {
+    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x7D, 0x00, 0x01, 0x00},   // rainbow_#1
+    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x85, 0x00, 0x01, 0x08},   // hotmetal_#1
+    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x87, 0x00, 0x01, 0x0A},   // gray
+    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x88, 0x00, 0x01, 0x0B}    // reverse-gray
 };
+
 
 #define PANTILT_CALIB_PKT_SIZE (5)
 
@@ -71,8 +71,7 @@ rt_uint8_t calib_protcol[4][PANTILT_CALIB_PKT_SIZE] = {
     {0xE1, 0x1E, 0x09, 0xF1, 0x1F},
     {0xE1, 0x1E, 0x08, 0xF1, 0x1F},
     {0xE1, 0x1E, 0x09, 0xF1, 0x1F},
-};
-        
+};     
 
 #define PANTILT_UARTPORT_NAME "uart2"
 #define PANTILT_SEMAPHORE_NAME "shPTZ"
@@ -85,8 +84,6 @@ rt_uint8_t calib_protcol[4][PANTILT_CALIB_PKT_SIZE] = {
 #define PANTILT_RX_TIMEOUT      (10)
 
 #define PANTILT_PKT_HEADER          (0x6D402D3E)
-#define IRSENSOR_COLOR_PKT_HEADER   (0x05AA)
-#define IRSENSOR_ZOOM_PKT_HEADER    (0x0CAA)
 #define PANTILT_CALIB_PKT_HEADER    (0x1EE1)
 
 #define PANTILT_VALUE_MAXIMUM   (500)
@@ -151,15 +148,10 @@ static void pantilt_data_send_entry(void* parameter)
             LOG_D("send to pantilt");
             rt_device_write(dev, 0, pbuf, sizeof(ptz_serialctrlpkt));
         }
-        else if(ubase16 == IRSENSOR_COLOR_PKT_HEADER)
+        else if(ubase16 == IRSENSOR_COLOR_HEADER)
         {
             LOG_D("send to irsensor color");
-            rt_device_write(dev, 0, pbuf, IRSENSOR_COLOR_PKT_SIZE);
-        }
-        else if(ubase16 == IRSENSOR_ZOOM_PKT_HEADER)
-        {
-            LOG_D("send to irsensor zoom");
-            rt_device_write(dev, 0, pbuf, IRSENSOR_ZOOM_PKT_SIZE);
+            rt_device_write(dev, 0, pbuf, IRSENSOR_FRAME_SIZE);
         }
         else if(ubase16 == PANTILT_CALIB_PKT_HEADER)
         {
@@ -295,31 +287,24 @@ void pantilt_resolving_entry(void* parameter)
                 env->ptz_action = PANTILT_ACTION_NULL;
                 LOG_D("PANTILT_ACTION_IRCOLOR");
                 
-                pktsz = sizeof(irs_serialctrlpkt);
-                
                 switch(env->irs_color)
                 {
                     case 0:
-                        irs_serialctrlpkt[5] = 0;
+                        rt_memcpy(irs_control_frame, irs_color[0], IRSENSOR_FRAME_SIZE);
                         break;
                     case 1:
-                        irs_serialctrlpkt[5] = 1;
+                        rt_memcpy(irs_control_frame, irs_color[1], IRSENSOR_FRAME_SIZE);
                         break;
                     case 2:
-                        irs_serialctrlpkt[5] = 2;
+                        rt_memcpy(irs_control_frame, irs_color[2], IRSENSOR_FRAME_SIZE);
                         break;
                     default:
-                        irs_serialctrlpkt[5] = 4;
+                        rt_memcpy(irs_control_frame, irs_color[3], IRSENSOR_FRAME_SIZE);
                         break;
                 }
-                
-                irs_serialctrlpkt[6] = 0x00;
-                
-                for (int i = 0; i < 6; i++)
-                    irs_serialctrlpkt[6] += irs_serialctrlpkt[i];
-                
+
                 pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, irs_serialctrlpkt, pktsz);
+                rt_memcpy(pbuf, irs_control_frame, IRSENSOR_FRAME_SIZE);
                 rt_mb_send(mailbox, (rt_ubase_t)pbuf);
       
             }
@@ -444,48 +429,40 @@ void pantilt_resolving_entry(void* parameter)
                 env->ptz_action = PANTILT_ACTION_NULL;
                 LOG_D("PANTILT_ACTION_IRCOLOR");
                 
-                pktsz = sizeof(irs_serialctrlpkt);
-                
                 switch(env->irs_color)
                 {
                     case 0:
-                        irs_serialctrlpkt[5] = 0;
+                        rt_memcpy(irs_control_frame, irs_color[0], IRSENSOR_FRAME_SIZE);
                         break;
                     case 1:
-                        irs_serialctrlpkt[5] = 1;
+                        rt_memcpy(irs_control_frame, irs_color[1], IRSENSOR_FRAME_SIZE);
                         break;
                     case 2:
-                        irs_serialctrlpkt[5] = 2;
+                        rt_memcpy(irs_control_frame, irs_color[2], IRSENSOR_FRAME_SIZE);
                         break;
                     default:
-                        irs_serialctrlpkt[5] = 4;
+                        rt_memcpy(irs_control_frame, irs_color[3], IRSENSOR_FRAME_SIZE);
                         break;
                 }
-                
-                irs_serialctrlpkt[6] = 0x00;
-                
-                for (int i = 0; i < 6; i++)
-                    irs_serialctrlpkt[6] += irs_serialctrlpkt[i];
-                
+
                 pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, irs_serialctrlpkt, pktsz);
+                rt_memcpy(pbuf, irs_control_frame, IRSENSOR_FRAME_SIZE);
                 rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-      
             }
             else if (env->ptz_action == PANTILT_ACTION_IRZOOM)
             {
                 env->ptz_action = PANTILT_ACTION_NULL;
                 LOG_D("PANTILT_ACTION_IRZOOM");
                 
-                pktsz = IRSENSOR_ZOOM_PKT_SIZE;
-                
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                
-                if (env->irs_zoom > 7)
-                    env->irs_zoom = 7;
-                
-                rt_memcpy(pbuf, irs_zoom[env->irs_zoom], pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);                
+//                pktsz = IRSENSOR_ZOOM_PKT_SIZE;
+//                
+//                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+//                
+//                if (env->irs_zoom > 7)
+//                    env->irs_zoom = 7;
+//                
+//                rt_memcpy(pbuf, irs_zoom[env->irs_zoom], pktsz);
+//                rt_mb_send(mailbox, (rt_ubase_t)pbuf);                
             }
             else if (env->ptz_action == PANTILT_ACTION_CALIBRATE)
             {
