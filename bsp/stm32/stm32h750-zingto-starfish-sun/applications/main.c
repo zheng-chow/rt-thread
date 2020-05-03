@@ -1,0 +1,74 @@
+/*
+ * Copyright (c) 2006-2018, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2019-03-05     whj4674672   first version
+ */
+
+#include <rtthread.h>
+#include <rtdevice.h>
+#include <board.h>
+
+/* defined the LED0 pin: PB0 */
+#define LED0_PIN    GET_PIN(E, 4)
+#define SAMPLE_UART_NAME2       "uart2"
+
+static struct rt_semaphore rx_sem;
+static rt_device_t serial2;
+
+static rt_err_t uart_input(rt_device_t dev, rt_size_t size)
+{
+    rt_sem_release(&rx_sem);
+    return RT_EOK;
+}
+static void serial_thread_entry(void *parameter)
+{
+    char ch;
+
+    while (1)
+    {
+        while (rt_device_read(serial2, -1, &ch, 1) != 1)
+        {
+            rt_sem_take(&rx_sem, RT_WAITING_FOREVER);
+        }
+       
+        rt_device_write(serial2, 0, &ch, 1);
+    }
+}
+
+int main(void)
+{
+	rt_err_t ret = RT_EOK;
+	char str[] = "hello RT-Thread!\r\n";
+	serial2 = rt_device_find(SAMPLE_UART_NAME2);
+	rt_sem_init(&rx_sem, "rx_sem", 0, RT_IPC_FLAG_FIFO);
+	rt_device_open(serial2, RT_DEVICE_FLAG_INT_RX);
+	rt_device_set_rx_indicate(serial2, uart_input);
+	rt_device_write(serial2, 0, str, (sizeof(str) - 1));
+	rt_thread_t thread = rt_thread_create("serial", serial_thread_entry, RT_NULL, 1024, 25, 10);
+	
+	if (thread != RT_NULL)
+	{
+			rt_thread_startup(thread);
+	}
+	else
+	{
+			ret = RT_ERROR;
+	}
+	
+	rt_pin_mode(LED0_PIN,PIN_MODE_OUTPUT);
+	while(1)
+	{
+		rt_thread_mdelay(500);
+		rt_device_write(serial2, 0, str, (sizeof(str) - 1));
+		rt_kprintf("hahhahahah");
+		rt_pin_write(LED0_PIN,PIN_LOW);
+		rt_thread_mdelay(500);
+		rt_pin_write(LED0_PIN,PIN_HIGH);
+	}
+	
+	return ret;
+}
