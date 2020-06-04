@@ -67,6 +67,7 @@ void pantilt_resolving_entry(void* parameter);
 #define PANTILT_ACTION_IRCOLOR          (0x05)
 #define PANTILT_ACTION_IRZOOM           (0x06)
 #define PANTILT_ACTION_CALIBRATE        (0x07)
+#define PANTILT_ACTION_SHOWTEMP         (0x08)
 
 /* track kernel function thread */
 void track_resolving_entry(void* parameter);
@@ -75,6 +76,10 @@ void track_resolving_entry(void* parameter);
 #define TRACK_ACTION_PREPARE            (0x01)
 #define TRACK_ACTION_TRACE_START        (0x03)
 #define TRACK_ACTION_TRACE_STOP         (0x04)
+#define TRACK_ACTION_ZOOM_SHOW          (0x05)
+#define TRACK_ACTION_CAPTURE            (0x06)
+#define TRACK_ACTION_RECORD_ON          (0x07)
+#define TRACK_ACTION_RECORD_OFF         (0x08)
 
 /* zingto kernel function thread */
 void zingto_resolving_entry(void* parameter);

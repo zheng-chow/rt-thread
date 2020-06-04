@@ -869,7 +869,7 @@ static int rt_fota_start_application(void)
 
 	LOG_I("Implement application now.");
     
-    rt_thread_delay(10);
+    rt_thread_delay(500);
     
     __disable_irq();
     HAL_DeInit();

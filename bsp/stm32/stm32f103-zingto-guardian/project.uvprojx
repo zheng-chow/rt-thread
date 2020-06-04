@@ -137,7 +137,7 @@
           </Flash1>
           <bUseTDR>1</bUseTDR>
           <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3>"" ()</Flash3>
+          <Flash3></Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -459,6 +459,11 @@
         <Group>
           <GroupName>Applications</GroupName>
           <Files>
+            <File>
+              <FileName>general_pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>applications\general_pid.c</FilePath>
+            </File>
             <File>
               <FileName>kft_camera.c</FileName>
               <FileType>1</FileType>

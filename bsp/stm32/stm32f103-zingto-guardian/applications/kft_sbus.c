@@ -158,9 +158,9 @@ void sbus_resolving_entry(void* parameter)
         {
             switch(i) {
 
-            case SBUS_POS(0): // roll
-            case SBUS_POS(1): // pitch
-            case SBUS_POS(2): // yaw
+            case 0: // roll
+            case 1: // pitch
+            case 3: // yaw
                 if (pval[i] != env->ch_value[i])
                 {                    
                     env->ch_change[i] = RT_TRUE;
@@ -262,20 +262,26 @@ void sbus_resolving_entry(void* parameter)
                     
                     if (env->ch_status[i] == SBUS_HIGH)
                     {
-                        cam_eval = CAMERA_CMD_CAPTURE;
-                        cam_request = RT_TRUE;
+//                        cam_eval = CAMERA_CMD_CAPTURE;
+//                        cam_request = RT_TRUE;
+                        env->trck_action = TRACK_ACTION_CAPTURE;
+                        trck_request = RT_TRUE;
                     }
                     else if (env->ch_status[i] == SBUS_LOW)
                     {
                         if (env->cam_recording)
                         {
-                            cam_eval = CAMERA_CMD_RECORD_OFF;
-                            env->cam_recording = RT_FALSE;
+//                            cam_eval = CAMERA_CMD_RECORD_OFF;
+//                            env->cam_recording = RT_FALSE;
+                            env->trck_action = TRACK_ACTION_RECORD_OFF;
+                            trck_request = RT_TRUE;
                         }
                         else
                         {
-                            cam_eval = CAMERA_CMD_RECORD_ON;
-                            env->cam_recording = RT_TRUE;
+//                            cam_eval = CAMERA_CMD_RECORD_ON;
+//                            env->cam_recording = RT_TRUE;
+                            env->trck_action = TRACK_ACTION_RECORD_ON;
+                            trck_request = RT_TRUE;
                         }
                         cam_request = RT_TRUE;
                     }

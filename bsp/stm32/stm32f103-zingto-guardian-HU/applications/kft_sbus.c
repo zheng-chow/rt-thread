@@ -179,17 +179,17 @@ void sbus_resolving_entry(void* parameter)
                 }
                 else
                 {
-                    if (env->ch_status[i] == SBUS_EXHIGH)
-                    {
-                        if (rt_tick_get() - env->sbus_cali_tick > RT_TICK_PER_SECOND * 5)
-                        {
-                            env->sbus_cali_tick = rt_tick_get();
-                            
-                            env->ptz_action = PANTILT_ACTION_CALIBRATE;
-                            ptz_request = RT_TRUE;
-                            i = SBUS_CHANNEL_NUMBER;
-                        }
-                    }
+//                    if (env->ch_status[i] == SBUS_EXHIGH)
+//                    {
+//                        if (rt_tick_get() - env->sbus_cali_tick > RT_TICK_PER_SECOND * 5)
+//                        {
+//                            env->sbus_cali_tick = rt_tick_get();
+//                            
+//                            env->ptz_action = PANTILT_ACTION_CALIBRATE;
+//                            ptz_request = RT_TRUE;
+//                            i = SBUS_CHANNEL_NUMBER;
+//                        }
+//                    }
                 }
                 break;
             case SBUS_POS(1): // pitch
@@ -451,4 +451,3 @@ void sbus_resolving_entry(void* parameter)
     }
     // never be here.
 }
-

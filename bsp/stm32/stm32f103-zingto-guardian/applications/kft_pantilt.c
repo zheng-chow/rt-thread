@@ -39,16 +39,30 @@ typedef struct __PTZ_SendPacket
 }ptz_serialctrlpkt;
 #pragma pack(4)
 
-const float ZOOM2RATIO[30] = {  1.0f,   0.7f,   0.5f,   0.4f,   0.4f,   0.4f,
+const float ZOOM2RATIO[30] = {  1.0f,   0.5f,   0.45f,   0.4f,   0.35f,   0.3f,
                                 0.3f,   0.3f,   0.3f,   0.25f,  0.25f,  0.25f,
                                 0.2f,   0.2f,   0.2f,   0.15f,  0.15f,  0.15f,
                                 0.1f,   0.1f,   0.1f,   0.1f,   0.1f,   0.1f,
                                 0.1f,   0.1f,   0.1f,   0.1f,   0.1f,   0.1f
                              };
-const float IR2RATIO = 0.2f;
+const float IR2RATIO = 0.5f;
+                             
+#define IRSENSOR_SET_ROI_PKT_SIZE  (16)
+rt_uint8_t irs_set_ROI[IRSENSOR_SET_ROI_PKT_SIZE]  = {0xAA, 0x0C, 0x01, 0x2B, 0x01, 
+                                                      0xA0, 0x00, 0x80, 0x00,           // left up. 160, 128
+                                                      0xE0, 0x01, 0x80, 0x01,           // right down. 640, 512
+                                                      0x8C, 0xEB, 0xAA};                      
+
+#define IRSENSOR_SHOW_HT_PKT_SIZE (9)
+rt_uint8_t irs_set_alltemp[IRSENSOR_SHOW_HT_PKT_SIZE] = {0xAA, 0x05, 0x07, 0x24, 0x01, 0x01, 0xDC, 0xEB, 0xAA};
+rt_uint8_t irs_show_hightemp[IRSENSOR_SHOW_HT_PKT_SIZE] = {0xAA, 0x05, 0x07, 0x26, 0x01, 0x01, 0xDE, 0xEB, 0xAA};
+rt_uint8_t irs_show_lowtemp[IRSENSOR_SHOW_HT_PKT_SIZE] = {0xAA, 0x05, 0x07, 0x28, 0x01, 0x01, 0xE0, 0xEB, 0xAA};
+
+#define IRSENSOR_SAVE_PKT_SIZE  (8)
+rt_uint8_t irs_save[IRSENSOR_SAVE_PKT_SIZE] = {0xAA, 0x04, 0x01, 0x7F, 0x02, 0x30, 0xEB, 0xAA};
 
 #define IRSENSOR_COLOR_PKT_SIZE (9)                    
-                             
+
 rt_uint8_t irs_serialctrlpkt[IRSENSOR_COLOR_PKT_SIZE] = {0xAA, 0x05, 0x01, 0x42, 0x02, 0x00, 0xF4, 0xEB, 0xAA};
 
 #define IRSENSOR_ZOOM_PKT_SIZE  (16)
@@ -247,6 +261,132 @@ void pantilt_resolving_entry(void* parameter)
     {
         result = rt_sem_take(env->sh_ptz, RT_WAITING_FOREVER);
 
+        if (env->ptz_action == PANTILT_ACTION_IRCOLOR)
+        {
+            env->ptz_action = PANTILT_ACTION_NULL;
+            LOG_D("PANTILT_ACTION_IRCOLOR");
+            
+            pktsz = sizeof(irs_serialctrlpkt);
+            
+            switch(env->irs_color)
+            {
+                case 0:
+                    irs_serialctrlpkt[5] = 0;
+                    break;
+                case 1:
+                    irs_serialctrlpkt[5] = 1;
+                    break;
+                case 2:
+                    irs_serialctrlpkt[5] = 2;
+                    break;
+                default:
+                    irs_serialctrlpkt[5] = 4;
+                    break;
+            }
+            
+            irs_serialctrlpkt[6] = 0x00;
+            
+            for (int i = 0; i < 6; i++)
+                irs_serialctrlpkt[6] += irs_serialctrlpkt[i];
+            
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, irs_serialctrlpkt, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+  
+        }
+        else if (env->ptz_action == PANTILT_ACTION_SHOWTEMP)
+        {
+            env->ptz_action = PANTILT_ACTION_NULL;
+            LOG_D("PANTILT_ACTION_SHOWTEMP");
+            
+            rt_thread_delay(RT_TICK_PER_SECOND);
+           // show set all temp.
+            pktsz = sizeof(irs_set_alltemp);
+            irs_set_alltemp[6] = 0x00;
+            for (int i = 0; i < 6; i++)
+                irs_set_alltemp[6] += irs_set_alltemp[i];
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, irs_set_alltemp, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);            
+
+            rt_thread_delay(RT_TICK_PER_SECOND);
+           // show high point.                
+            pktsz = sizeof(irs_show_hightemp);
+            irs_show_hightemp[6] = 0x00;
+            for (int i = 0; i < 6; i++)
+                irs_show_hightemp[6] += irs_show_hightemp[i];
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, irs_show_hightemp, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+            
+            rt_thread_delay(RT_TICK_PER_SECOND);
+            // show low point.
+            pktsz = sizeof(irs_show_lowtemp);
+            irs_show_lowtemp[6] = 0x00;
+            for (int i = 0; i < 6; i++)
+                irs_show_lowtemp[6] += irs_show_lowtemp[i];
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, irs_show_lowtemp, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+            
+//            rt_thread_delay(10);
+//           // set ROI.                
+//            pktsz = sizeof(irs_set_ROI);
+//            irs_set_ROI[13] = 0x00;
+//            for (int i = 0; i < 13; i++)
+//                irs_set_ROI[13] += irs_set_ROI[i];
+//            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+//            rt_memcpy(pbuf, irs_set_ROI, pktsz);
+//            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+           
+
+            rt_thread_delay(RT_TICK_PER_SECOND);
+           // save configuration.
+            pktsz = sizeof(irs_save);
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, irs_save, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+            
+            
+        }
+        else if (env->ptz_action == PANTILT_ACTION_CALIBRATE)
+        {
+            LOG_D("PANTILT_ACTION_CALIBRATE");
+            env->ptz_action = PANTILT_ACTION_NULL;
+            
+            for (int i = 0; i < 4; i++)
+            {
+                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+                rt_memcpy(pbuf, calib_protcol[i], PANTILT_CALIB_PKT_SIZE);
+                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+                rt_thread_delay(200);
+            }
+        }
+        else if (env->ptz_action == PANTILT_ACTION_HOMING)
+        {
+            LOG_D("PANTILT_ACTION_HOMING");
+            env->ptz_action = PANTILT_ACTION_NULL;
+            
+            pktsz = sizeof(ptz_serialctrlpkt);
+            rt_memset(&ctrlpkt, 0x00, pktsz);
+            ctrlpkt.HEADER = PANTILT_PKT_HEADER;
+            
+            ctrlpkt.homing = 0x9BFE;
+            pantilt_update_checksum(&ctrlpkt);
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, &ctrlpkt, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+            
+            rt_thread_delay(100);
+            
+            rt_memset(&ctrlpkt, 0x00, pktsz);
+            ctrlpkt.HEADER = PANTILT_PKT_HEADER;               
+            ctrlpkt.homing = 0x0000;
+            pantilt_update_checksum(&ctrlpkt);
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, &ctrlpkt, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+        }
 
         if (env->trck_incharge)
         {
@@ -290,78 +430,6 @@ void pantilt_resolving_entry(void* parameter)
         {
             env->sbus_incharge = RT_FALSE;
             
-            if (env->ptz_action == PANTILT_ACTION_IRCOLOR)
-            {
-                env->ptz_action = PANTILT_ACTION_NULL;
-                LOG_D("PANTILT_ACTION_IRCOLOR");
-                
-                pktsz = sizeof(irs_serialctrlpkt);
-                
-                switch(env->irs_color)
-                {
-                    case 0:
-                        irs_serialctrlpkt[5] = 0;
-                        break;
-                    case 1:
-                        irs_serialctrlpkt[5] = 1;
-                        break;
-                    case 2:
-                        irs_serialctrlpkt[5] = 2;
-                        break;
-                    default:
-                        irs_serialctrlpkt[5] = 4;
-                        break;
-                }
-                
-                irs_serialctrlpkt[6] = 0x00;
-                
-                for (int i = 0; i < 6; i++)
-                    irs_serialctrlpkt[6] += irs_serialctrlpkt[i];
-                
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, irs_serialctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-      
-            }
-            else if (env->ptz_action == PANTILT_ACTION_CALIBRATE)
-            {
-                LOG_D("PANTILT_ACTION_CALIBRATE");
-                env->ptz_action = PANTILT_ACTION_NULL;
-                
-                for (int i = 0; i < 4; i++)
-                {
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, calib_protcol[i], PANTILT_CALIB_PKT_SIZE);
-                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                    rt_thread_delay(200);
-                }
-            }
-            else if (env->ptz_action == PANTILT_ACTION_HOMING)
-            {
-                LOG_D("PANTILT_ACTION_HOMING");
-                
-                pktsz = sizeof(ptz_serialctrlpkt);
-                
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;
-                
-                ctrlpkt.homing = 0x9BFE;
-                pantilt_update_checksum(&ctrlpkt);
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                
-                rt_thread_delay(100);
-                
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;               
-                ctrlpkt.homing = 0x0000;
-                pantilt_update_checksum(&ctrlpkt);
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-            }
-            else
             {
                 rt_int16_t dval_pitch, dval_yaw, dval_roll = 0;
                 LOG_D("PANTILT_ACTION_OTHER, %d", env->ptz_action);
@@ -437,93 +505,6 @@ void pantilt_resolving_entry(void* parameter)
         {
             env->user_incharge = RT_FALSE;
             
-            if (env->ptz_action == PANTILT_ACTION_IRCOLOR)
-            {
-                env->ptz_action = PANTILT_ACTION_NULL;
-                LOG_D("PANTILT_ACTION_IRCOLOR");
-                
-                pktsz = sizeof(irs_serialctrlpkt);
-                
-                switch(env->irs_color)
-                {
-                    case 0:
-                        irs_serialctrlpkt[5] = 0;
-                        break;
-                    case 1:
-                        irs_serialctrlpkt[5] = 1;
-                        break;
-                    case 2:
-                        irs_serialctrlpkt[5] = 2;
-                        break;
-                    default:
-                        irs_serialctrlpkt[5] = 4;
-                        break;
-                }
-                
-                irs_serialctrlpkt[6] = 0x00;
-                
-                for (int i = 0; i < 6; i++)
-                    irs_serialctrlpkt[6] += irs_serialctrlpkt[i];
-                
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, irs_serialctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-      
-            }
-            else if (env->ptz_action == PANTILT_ACTION_IRZOOM)
-            {
-                env->ptz_action = PANTILT_ACTION_NULL;
-                LOG_D("PANTILT_ACTION_IRZOOM");
-                
-                pktsz = IRSENSOR_ZOOM_PKT_SIZE;
-                
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                
-                if (env->irs_zoom > 7)
-                    env->irs_zoom = 7;
-                
-                rt_memcpy(pbuf, irs_zoom[env->irs_zoom], pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);                
-            }
-            else if (env->ptz_action == PANTILT_ACTION_CALIBRATE)
-            {
-                LOG_D("PANTILT_ACTION_CALIBRATE");
-                env->ptz_action = PANTILT_ACTION_NULL;
-                
-                for (int i = 0; i < 4; i++)
-                {
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, calib_protcol[i], PANTILT_CALIB_PKT_SIZE);
-                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                    rt_thread_delay(200);
-                }
-            }
-            else if (env->ptz_action == PANTILT_ACTION_HOMING)
-            {
-                LOG_D("PANTILT_ACTION_HOMING");
-                
-                pktsz = sizeof(ptz_serialctrlpkt);
-                
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;
-                
-                ctrlpkt.homing = 0x9BFE;
-                pantilt_update_checksum(&ctrlpkt);
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                
-                rt_thread_delay(100);
-                
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;               
-                ctrlpkt.homing = 0x0000;
-                pantilt_update_checksum(&ctrlpkt);
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-            }
-            else
             {
                 rt_int16_t dval_pitch, dval_yaw, dval_roll = 0;
                 LOG_D("PANTILT_ACTION_OTHER, %d", env->ptz_action);

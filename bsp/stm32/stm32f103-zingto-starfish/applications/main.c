@@ -296,7 +296,8 @@ static void uart2_rx_entry(void* parameter)
                     
                     float fVal = 0.0f;
                     rt_uint8_t   SGBC32[5] = {0xE1, 0x1E, 0x00, 0xF1, 0x1F};
-                    fVal = *(float*)&ppkg[6];
+                    rt_memcpy(&fVal, &ppkg[6], sizeof(float));
+                    //fVal = *(float*)&ppkg[6];
                     rt_kprintf("tRX2: CTRL(%d)\n", (rt_uint8_t)fVal);
                     SGBC32[2] = (rt_uint8_t)fVal;
                     

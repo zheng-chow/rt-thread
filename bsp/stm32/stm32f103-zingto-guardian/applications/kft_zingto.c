@@ -16,7 +16,7 @@
 
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "ZINGTO"
-#define DBG_LEVEL DBG_LOG
+#define DBG_LEVEL DBG_LOG               // DBG_INFO
 #define DBG_COLOR
 #include <rtdbg.h>
 
@@ -192,19 +192,25 @@ void zingto_resolving_entry(void* parameter)
             ptz_request = RT_TRUE;
             break;
         case 0x0C:  // record on
-            env->cam_zoom_speed = 0;
-            cam_eval = CAMERA_CMD_RECORD_ON;
-            cam_request = RT_TRUE;
+//            env->cam_zoom_speed = 0;
+//            cam_eval = CAMERA_CMD_RECORD_ON;
+//            cam_request = RT_TRUE;
+            env->trck_action = TRACK_ACTION_RECORD_ON;
+            trck_request = RT_TRUE;
             break;
         case 0x0D:  // record off
-            env->cam_zoom_speed = 0;
-            cam_eval = CAMERA_CMD_RECORD_OFF;
-            cam_request = RT_TRUE;
+//            env->cam_zoom_speed = 0;
+//            cam_eval = CAMERA_CMD_RECORD_OFF;
+//            cam_request = RT_TRUE;
+            env->trck_action = TRACK_ACTION_RECORD_OFF;
+            trck_request = RT_TRUE;
             break;
         case 0x0E:  // capture
-            env->cam_zoom_speed = 0;
-            cam_eval = CAMERA_CMD_CAPTURE;
-            cam_request = RT_TRUE;
+//            env->cam_zoom_speed = 0;
+//            cam_eval = CAMERA_CMD_CAPTURE;
+//            cam_request = RT_TRUE;
+            env->trck_action = TRACK_ACTION_CAPTURE;
+            trck_request = RT_TRUE;
             break;
         case 0x11:
             LOG_W("calibrate gyro temp");
@@ -257,7 +263,7 @@ void zingto_resolving_entry(void* parameter)
             if (env->sh_ptz != RT_NULL)
             {
                 env->user_incharge = RT_TRUE;
-                rt_sem_release(env->sh_ptz); // notify the PanTiltZoom.
+                rt_sem_release(env->sh_ptz);    // notify the PanTiltZoom.
             }
         }
         else {

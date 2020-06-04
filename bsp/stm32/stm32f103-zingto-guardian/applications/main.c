@@ -19,7 +19,7 @@
 
 #define MODE_PIN   GET_PIN(B, 7)
 
-#define APP_VERSION "1.0.korea"
+#define APP_VERSION "1.2.korea"
 #define RT_APP_PART_ADDR    0x08020000
 
 static struct guardian_environment env;
@@ -87,6 +87,14 @@ int main(void)
         result = rt_thread_startup(pthread);
         RT_ASSERT(result == RT_EOK);    
     }
+    
+    rt_thread_delay(RT_TICK_PER_SECOND);
+    
+    rt_event_send(env.ev_camera, CAMERA_CMD_ZOOM_GETPOS); // notify the Camera.
+    
+    rt_thread_delay(RT_TICK_PER_SECOND * 10);
+    env.ptz_action = PANTILT_ACTION_SHOWTEMP;
+    rt_sem_release(env.sh_ptz);
     
     while(RT_TRUE)
     {
