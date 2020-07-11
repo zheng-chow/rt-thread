@@ -114,11 +114,14 @@ void sbus_resolving_entry(void* parameter)
 
     while (1)
     {
-        result = rt_sem_take(semaph, RT_WAITING_FOREVER);
         
-        if(result == -RT_ETIMEOUT)
-            continue;
+        result = rt_sem_take(semaph, RT_TICK_PER_SECOND);
         
+        if(result == -RT_ETIMEOUT) {
+            rt_pin_write(LED_PIN, PIN_LOW);
+            continue;            
+        }
+
         switch (szbuf){
         case 0:
         case 1:
@@ -159,6 +162,7 @@ void sbus_resolving_entry(void* parameter)
             switch(i) {
 
             case 0: // roll
+                break;
             case 1: // pitch
             case 3: // yaw
                 if (pval[i] != env->ch_value[i])
@@ -200,10 +204,9 @@ void sbus_resolving_entry(void* parameter)
                         cam_eval = CAMERA_CMD_ZOOM_OUT;
                     else if (differ > 100)
                         cam_eval = CAMERA_CMD_ZOOM_IN;
-                    else
-                        cam_eval = CAMERA_CMD_ZOOM_STOP;
-                    
-                    cam_eval |= CAMERA_CMD_ZOOM_GETPOS;
+                    else {
+                        cam_eval = CAMERA_CMD_ZOOM_STOP | CAMERA_CMD_ZOOM_GETPOS;
+                    }
                     
                     cam_request = RT_TRUE;
                 }
@@ -235,13 +238,14 @@ void sbus_resolving_entry(void* parameter)
                     env->ch_status[i] = tmp_status;
                     
                     ptz_request = RT_TRUE;
+                    env->ptz_action = PANTILT_ACTION_NULL;
                     
                     if (env->ch_status[i] == SBUS_HIGH)
-                        env->ptz_action = PANTILT_ACTION_HEADDOWN;
+                        env->ptz_mode = PANTILT_MODE_HEADDOWN;
                     else if (env->ch_status[i] == SBUS_IDLE)
-                        env->ptz_action = PANTILT_ACTION_HEADFREE;
+                        env->ptz_mode = PANTILT_MODE_HEADFREE;
                     else if (env->ch_status[i] == SBUS_LOW)
-                        env->ptz_action = PANTILT_ACTION_HEADLOCK;
+                        env->ptz_mode = PANTILT_MODE_HEADLOCK;
                     else
                         ptz_request = RT_FALSE;
                 }
@@ -262,29 +266,32 @@ void sbus_resolving_entry(void* parameter)
                     
                     if (env->ch_status[i] == SBUS_HIGH)
                     {
-//                        cam_eval = CAMERA_CMD_CAPTURE;
-//                        cam_request = RT_TRUE;
+                        cam_eval = CAMERA_CMD_CAPTURE;
                         env->trck_action = TRACK_ACTION_CAPTURE;
+                        
+                        cam_request = RT_TRUE;
                         trck_request = RT_TRUE;
                     }
                     else if (env->ch_status[i] == SBUS_LOW)
                     {
                         if (env->cam_recording)
                         {
-//                            cam_eval = CAMERA_CMD_RECORD_OFF;
-//                            env->cam_recording = RT_FALSE;
+                            cam_eval = CAMERA_CMD_RECORD_OFF;
+                            env->cam_recording = RT_FALSE;
                             env->trck_action = TRACK_ACTION_RECORD_OFF;
-                            trck_request = RT_TRUE;
                         }
                         else
                         {
-//                            cam_eval = CAMERA_CMD_RECORD_ON;
-//                            env->cam_recording = RT_TRUE;
+                            cam_eval = CAMERA_CMD_RECORD_ON;
+                            env->cam_recording = RT_TRUE;
                             env->trck_action = TRACK_ACTION_RECORD_ON;
-                            trck_request = RT_TRUE;
+                            
                         }
+                        
                         cam_request = RT_TRUE;
+                        trck_request = RT_TRUE;
                     }
+                    
                 }
                 break;
             case 6: // track
@@ -360,20 +367,23 @@ void sbus_resolving_entry(void* parameter)
                     
                     if (env->ch_status[i] == SBUS_LOW)
                     {
-                        env->cam_pip_mode++;
-                        if (env->cam_pip_mode > 4)
-                            env->cam_pip_mode = 1;
-                        
-                        if (env->cam_pip_mode == 1)
-                            cam_eval = CAMERA_CMD_PIP_MODE1;
-                        else if (env->cam_pip_mode == 2)
-                            cam_eval = CAMERA_CMD_PIP_MODE2;
-                        else if (env->cam_pip_mode == 3)
-                            cam_eval = CAMERA_CMD_PIP_MODE3;
-                        else
-                            cam_eval = CAMERA_CMD_PIP_MODE4;
+                        if (env->cam_blankvideo == RT_FALSE){
+                                                    
+                            env->cam_pip_mode++;
+                            if (env->cam_pip_mode > 4)
+                                env->cam_pip_mode = 1;
+                            
+                            if (env->cam_pip_mode == 1)
+                                cam_eval = CAMERA_CMD_PIP_MODE1;
+                            else if (env->cam_pip_mode == 2)
+                                cam_eval = CAMERA_CMD_PIP_MODE2;
+                            else if (env->cam_pip_mode == 3)
+                                cam_eval = CAMERA_CMD_PIP_MODE3;
+                            else
+                                cam_eval = CAMERA_CMD_PIP_MODE4;
 
-                        cam_request = RT_TRUE;
+                            cam_request = RT_TRUE;
+                        }
                     }
                     else if (env->ch_status[i] == SBUS_HIGH)
                     {
@@ -383,6 +393,44 @@ void sbus_resolving_entry(void* parameter)
                         
                         env->ptz_action = PANTILT_ACTION_IRCOLOR;
 
+                        ptz_request = RT_TRUE;
+                    }
+                }
+                break;
+            case 9: // done
+                if (pval[i] < SBUS_THRESHOLD_INVAILED)
+                    tmp_status = SBUS_INVAILD;
+                else if (pval[i] < SBUS_THRESHOLD_LOW)
+                    tmp_status = SBUS_LOW;
+                else if (pval[i] < SBUS_THRESHOLD_HIGH)
+                    tmp_status = SBUS_IDLE;
+                else
+                    tmp_status = SBUS_HIGH;
+                
+                if (env->ch_status[i] != tmp_status)
+                {
+                    env->ch_status[i] = tmp_status;
+                    
+                    if (env->ch_status[i] == SBUS_LOW)
+                    {
+                        env->irs_zoom--;
+                        
+                        if (env->irs_zoom < 0)
+                            env->irs_zoom = 0;
+                        
+                        LOG_I("irs_zoom: %d", env->irs_zoom);
+                        env->ptz_action = PANTILT_ACTION_IRZOOM;
+                        ptz_request = RT_TRUE;
+                    }
+                    else if (env->ch_status[i] == SBUS_HIGH)
+                    {
+                        env->irs_zoom++;
+                        
+                        if (env->irs_zoom > 4)
+                            env->irs_zoom = 4;
+                        
+                        LOG_I("irs_zoom: %d", env->irs_zoom);
+                        env->ptz_action = PANTILT_ACTION_IRZOOM;
                         ptz_request = RT_TRUE;
                     }
                 }

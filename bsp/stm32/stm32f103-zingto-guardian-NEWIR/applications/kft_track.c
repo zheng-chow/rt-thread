@@ -131,8 +131,8 @@ static void track_data_recv_entry(void* parameter)
     pid_init(&pid_x, 1.4f, 0.02f, 0.5f);
     pid_init(&pid_y, 1.4f, 0.02f, 0.5f);
     
-    pid_setThreshold(&pid_x, 500.0f, 100.0f, 0.02f);
-    pid_setThreshold(&pid_y, 500.0f, 100.0f, 0.02f);
+    pid_setThreshold(&pid_x, 500.0f, 200.0f, 0.02f);
+    pid_setThreshold(&pid_y, 500.0f, 200.0f, 0.02f);
     
     pid_setSetpoint(&pid_x, 0.0f);
     pid_setSetpoint(&pid_y, 0.0f);
@@ -193,13 +193,7 @@ static void track_data_recv_entry(void* parameter)
             if (on_tracing == RT_FALSE)
                 continue;
             
-            if (lost_count++ < 10)
-                continue;
-            
             on_tracing = RT_FALSE;
-            
-            pid_setICS(&pid_x, 0.0f);
-            pid_setICS(&pid_y, 0.0f);
             
             if (env->trck_incharge == RT_TRUE)
             {
@@ -220,14 +214,14 @@ static void track_data_recv_entry(void* parameter)
                 ptr = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
                 rt_memcpy(ptr, &ctrlpkt, pktsz);
                 rt_mb_send(mailbox, (rt_ubase_t)ptr);
-                
-                /* stop PanTiltZoom */
-                env->trck_err_x = 0;
-                env->trck_err_y = 0;
-                rt_sem_release(env->sh_ptz);
-                
-                LOG_D("tracing target lost");
             }
+            
+            /* stop PanTiltZoom */
+            env->trck_err_x = 0;
+            env->trck_err_y = 0;
+            rt_sem_release(env->sh_ptz);
+
+            LOG_D("tracing target lost");
         }
             
         // got a complete packet, decode now.
@@ -311,7 +305,7 @@ void track_resolving_entry(void* parameter)
 			ctrlpkt.set_fuction = 0xFE;
 			ctrlpkt.start_trace = 0x01;			// 0: OFF; 1: ON.
 			ctrlpkt.__reserved3 = 0x01;
-			ctrlpkt.set_trace_mode = 0x3C;		// medium size trace window.
+			ctrlpkt.set_trace_mode = 0x38;		// 0x3C: S,M,L     0x38: M,L    0x2C: S,M
             
             LOG_D("tracker start tracing.");
             

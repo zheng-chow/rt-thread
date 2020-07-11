@@ -192,16 +192,16 @@ void zingto_resolving_entry(void* parameter)
             ptz_request = RT_TRUE;
             break;
         case 0x0C:  // record on
-            env->trck_action = TRACK_ACTION_RECORD_ON;
-            trck_request = RT_TRUE;
+            cam_eval = CAMERA_CMD_RECORD_ON;
+            cam_request = RT_TRUE;
             break;
         case 0x0D:  // record off
-            env->trck_action = TRACK_ACTION_RECORD_OFF;
-            trck_request = RT_TRUE;
+            cam_eval = CAMERA_CMD_RECORD_OFF;
+            cam_request = RT_TRUE;
             break;
         case 0x0E:  // capture
-            env->trck_action = TRACK_ACTION_SNAP;
-            trck_request = RT_TRUE;
+            cam_eval = CAMERA_CMD_CAPTURE;
+            cam_request = RT_TRUE;
             break;
         case 0x11:
             LOG_W("calibrate gyro temp");

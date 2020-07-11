@@ -38,13 +38,13 @@ extern "C" {
 #endif
 
 /* DMA1 stream2 */
-#if defined(BSP_SPI3_RX_USING_DMA) && !defined(SPI3_RX_DMA_INSTANCE)
-#define SPI3_DMA_RX_IRQHandler           DMA1_Stream2_IRQHandler
-#define SPI3_RX_DMA_RCC                  RCC_AHB1ENR_DMA1EN
-#define SPI3_RX_DMA_INSTANCE             DMA1_Stream2
-#define SPI3_RX_DMA_CHANNEL              DMA_CHANNEL_0
-#define SPI3_RX_DMA_IRQ                  DMA1_Stream2_IRQn
-#endif
+#if defined(BSP_UART4_RX_USING_DMA) && !defined(UART4_RX_DMA_INSTANCE)
+#define UART4_DMA_RX_IRQHandler          DMA1_Stream0_IRQHandler
+#define UART4_RX_DMA_RCC                 RCC_AHB1ENR_DMA1EN
+#define UART4_RX_DMA_INSTANCE            DMA1_Stream0
+#define UART4_RX_DMA_REQUEST             DMA_REQUEST_UART4_RX
+#define UART4_RX_DMA_IRQ                 DMA1_Stream0_IRQn
+#endif    
 
 /* DMA1 stream3 */
 #if defined(BSP_SPI2_RX_USING_DMA) && !defined(SPI2_RX_DMA_INSTANCE)

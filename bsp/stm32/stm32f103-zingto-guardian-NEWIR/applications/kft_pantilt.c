@@ -56,12 +56,27 @@ const float IR2RATIO = 0.2f;
 #define IRSENSOR_COLOR_HEADER   (0x1168)
 rt_uint8_t irs_control_frame[IRSENSOR_FRAME_SIZE];
 
+                             
 rt_uint8_t irs_color[4][IRSENSOR_FRAME_SIZE] = {
-    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x7D, 0x00, 0x01, 0x00},   // rainbow_#1
-    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x85, 0x00, 0x01, 0x08},   // hotmetal_#1
     {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x87, 0x00, 0x01, 0x0A},   // gray
-    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x88, 0x00, 0x01, 0x0B}    // reverse-gray
+    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x88, 0x00, 0x01, 0x0B},   // reverse-gray
+    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x7D, 0x00, 0x01, 0x00},   // rainbow_#1
+    {0x68, 0x11, 0x02, 0x01, 0x00, 0x00, 0x85, 0x00, 0x01, 0x08}    // hotmetal_#1
 };
+
+rt_uint8_t irs_zoom[10][IRSENSOR_FRAME_SIZE] = {
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0x98, 0x00, 0x06, 0x01},   // 1X
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0x99, 0x00, 0x06, 0x02},   // 2X
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0x9A, 0x00, 0x06, 0x03},   // 3X
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0x9B, 0x00, 0x06, 0x04},   // 4X
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0x9C, 0x00, 0x06, 0x05},   // 5X
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0x9D, 0x00, 0x06, 0x06},   // 6X
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0x9E, 0x00, 0x06, 0x07},   // 7X
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0x9F, 0x00, 0x06, 0x08},   // 8X
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0xA0, 0x00, 0x06, 0x09},   // 9X
+    {0x68, 0x26, 0x02, 0x01, 0x00, 0x00, 0xA1, 0x00, 0x06, 0x0A}    // 10X
+};
+
 
 #define PANTILT_CALIB_PKT_SIZE (5)
 
@@ -238,6 +253,86 @@ void pantilt_resolving_entry(void* parameter)
     {
         result = rt_sem_take(env->sh_ptz, RT_WAITING_FOREVER);
 
+        
+        if (env->ptz_action == PANTILT_ACTION_IRZOOM)
+        {
+            env->ptz_action = PANTILT_ACTION_NULL;
+            LOG_D("PANTILT_ACTION_IRZOOM");
+            
+            pktsz = IRSENSOR_FRAME_SIZE;
+            
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            
+            if (env->irs_zoom > 9)
+                env->irs_zoom = 9;
+            
+            rt_memcpy(pbuf, irs_zoom[env->irs_zoom], pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);                
+        }
+        else if (env->ptz_action == PANTILT_ACTION_IRCOLOR)
+        {
+            env->ptz_action = PANTILT_ACTION_NULL;
+            LOG_D("PANTILT_ACTION_IRCOLOR");
+            
+            switch(env->irs_color)
+            {
+                case 0:
+                    rt_memcpy(irs_control_frame, irs_color[0], IRSENSOR_FRAME_SIZE);
+                    break;
+                case 1:
+                    rt_memcpy(irs_control_frame, irs_color[1], IRSENSOR_FRAME_SIZE);
+                    break;
+                case 2:
+                    rt_memcpy(irs_control_frame, irs_color[2], IRSENSOR_FRAME_SIZE);
+                    break;
+                default:
+                    rt_memcpy(irs_control_frame, irs_color[3], IRSENSOR_FRAME_SIZE);
+                    break;
+            }
+
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, irs_control_frame, IRSENSOR_FRAME_SIZE);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+      
+        }
+        else if (env->ptz_action == PANTILT_ACTION_CALIBRATE)
+        {
+            LOG_D("PANTILT_ACTION_CALIBRATE");
+            env->ptz_action = PANTILT_ACTION_NULL;
+            
+            for (int i = 0; i < 4; i++)
+            {
+                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+                rt_memcpy(pbuf, calib_protcol[i], PANTILT_CALIB_PKT_SIZE);
+                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+                rt_thread_delay(200);
+            }
+        } 
+        else if (env->ptz_action == PANTILT_ACTION_HOMING)
+        {
+            LOG_D("PANTILT_ACTION_HOMING");
+            
+            pktsz = sizeof(ptz_serialctrlpkt);
+            
+            rt_memset(&ctrlpkt, 0x00, pktsz);
+            ctrlpkt.HEADER = PANTILT_PKT_HEADER;
+            
+            ctrlpkt.homing = 0x9BFE;
+            pantilt_update_checksum(&ctrlpkt);
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, &ctrlpkt, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+            
+            rt_thread_delay(100);
+            
+            rt_memset(&ctrlpkt, 0x00, pktsz);
+            ctrlpkt.HEADER = PANTILT_PKT_HEADER;               
+            ctrlpkt.homing = 0x0000;
+            pantilt_update_checksum(&ctrlpkt);
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, &ctrlpkt, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+        }
 
         if (env->trck_incharge)
         {
@@ -280,301 +375,141 @@ void pantilt_resolving_entry(void* parameter)
         else if (env->sbus_incharge)
         {
             env->sbus_incharge = RT_FALSE;
+
+            rt_int16_t dval_pitch, dval_yaw, dval_roll = 0;
+            LOG_D("PANTILT_ACTION_OTHER, %d", env->ptz_action);
             
-            if (env->ptz_action == PANTILT_ACTION_IRCOLOR)
-            {
-                env->ptz_action = PANTILT_ACTION_NULL;
-                LOG_D("PANTILT_ACTION_IRCOLOR");
-                
-                switch(env->irs_color)
-                {
-                    case 0:
-                        rt_memcpy(irs_control_frame, irs_color[0], IRSENSOR_FRAME_SIZE);
-                        break;
-                    case 1:
-                        rt_memcpy(irs_control_frame, irs_color[1], IRSENSOR_FRAME_SIZE);
-                        break;
-                    case 2:
-                        rt_memcpy(irs_control_frame, irs_color[2], IRSENSOR_FRAME_SIZE);
-                        break;
-                    default:
-                        rt_memcpy(irs_control_frame, irs_color[3], IRSENSOR_FRAME_SIZE);
-                        break;
-                }
+            pktsz = sizeof(ptz_serialctrlpkt);
+            rt_memset(&ctrlpkt, 0x00, pktsz);
+                        
+            ctrlpkt.HEADER = PANTILT_PKT_HEADER;
 
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, irs_control_frame, IRSENSOR_FRAME_SIZE);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-      
-            }
-            else if (env->ptz_action == PANTILT_ACTION_CALIBRATE)
+            dval_pitch = env->ch_value[1] - SBUS_VALUE_MEDIAN;    // pitch
+            if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
+                dval_pitch = 0;
+           
+            dval_yaw = env->ch_value[3] - SBUS_VALUE_MEDIAN;    // yaw
+            if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
+                dval_yaw = 0;
+            
+            switch(env->cam_pip_mode)
             {
-                LOG_D("PANTILT_ACTION_CALIBRATE");
-                env->ptz_action = PANTILT_ACTION_NULL;
-                
-                for (int i = 0; i < 4; i++)
-                {
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, calib_protcol[i], PANTILT_CALIB_PKT_SIZE);
-                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                    rt_thread_delay(200);
-                }
+                case 1:
+                case 3:
+                default:
+                    ctrlpkt.pitch   = dval_pitch * PANTILT_VALUE_RATIO * ZOOM2RATIO[env->cam_zoom_pos];
+                    ctrlpkt.yaw     = dval_yaw * PANTILT_VALUE_RATIO * ZOOM2RATIO[env->cam_zoom_pos];
+                    break;
+                case 2:
+                case 4:
+                    ctrlpkt.pitch   = dval_pitch * IR2RATIO;
+                    ctrlpkt.yaw     = dval_yaw * IR2RATIO;
+                    break;
             }
-            else if (env->ptz_action == PANTILT_ACTION_HOMING)
-            {
-                LOG_D("PANTILT_ACTION_HOMING");
                 
-                pktsz = sizeof(ptz_serialctrlpkt);
+//            LOG_D("pitch: %d, yaw: %d", ctrlpkt.pitch, ctrlpkt.yaw);
+//            
+//            ctrlpkt.roll = dval_roll;
                 
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;
-                
-                ctrlpkt.homing = 0x9BFE;
-                pantilt_update_checksum(&ctrlpkt);
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                
-                rt_thread_delay(100);
-                
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;               
-                ctrlpkt.homing = 0x0000;
-                pantilt_update_checksum(&ctrlpkt);
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-            }
-            else
-            {
-                rt_int16_t dval_pitch, dval_yaw, dval_roll = 0;
-                LOG_D("PANTILT_ACTION_OTHER, %d", env->ptz_action);
-                
-                pktsz = sizeof(ptz_serialctrlpkt);
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                            
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;
-
-//                dval_roll = env->ch_value[0] - SBUS_VALUE_MEDIAN;    // roll
-//                if (abs(dval_roll) < SBUS_VALUE_IGNORE * 3)
-//                    dval_roll = 0;
-//                else
-//                {
-//                    if (dval_roll < 0)
-//                        dval_roll = PANTILT_VALUE_MININUM;
-//                    else
-//                        dval_roll = PANTILT_VALUE_MAXIMUM;
-//                }
-                
-                dval_pitch = env->ch_value[1] - SBUS_VALUE_MEDIAN;    // pitch
-                if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
-                    dval_pitch = 0;
+            if (env->ptz_action == PANTILT_ACTION_HEADFREE)
+                ctrlpkt.mode = 0x0000;
+            else if (env->ptz_action == PANTILT_ACTION_HEADLOCK)
+                ctrlpkt.mode = 0x6400;               
+            else if (env->ptz_action == PANTILT_ACTION_HEADDOWN)
+                ctrlpkt.mode = 0x9BFE;               
+            
+            pantilt_update_checksum(&ctrlpkt);
                
-                dval_yaw = env->ch_value[3] - SBUS_VALUE_MEDIAN;    // yaw
-                if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
-                    dval_yaw = 0;
-                
-                switch(env->cam_pip_mode)
-                {
-                    case 1:
-                    case 3:
-                    default:
-                        ctrlpkt.pitch   = dval_pitch * PANTILT_VALUE_RATIO * ZOOM2RATIO[env->cam_zoom_pos];
-                        ctrlpkt.yaw     = dval_yaw * PANTILT_VALUE_RATIO * ZOOM2RATIO[env->cam_zoom_pos];
-                        break;
-                    case 2:
-                    case 4:
-                        ctrlpkt.pitch   = dval_pitch * IR2RATIO;
-                        ctrlpkt.yaw     = dval_yaw * IR2RATIO;
-                        break;
-                }
-                
-//                LOG_D("pitch: %d, yaw: %d", ctrlpkt.pitch, ctrlpkt.yaw);
-//                
-//                ctrlpkt.roll = dval_roll;
-                
-                if (env->ptz_action == PANTILT_ACTION_HEADFREE)
-                    ctrlpkt.mode = 0x0000;
-                else if (env->ptz_action == PANTILT_ACTION_HEADLOCK)
-                    ctrlpkt.mode = 0x6400;               
-                else if (env->ptz_action == PANTILT_ACTION_HEADDOWN)
-                    ctrlpkt.mode = 0x9BFE;               
-                
-                pantilt_update_checksum(&ctrlpkt);
-                   
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, &ctrlpkt, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+            
+            if ((ctrlpkt.roll == 0) || (ctrlpkt.pitch == 0) || (ctrlpkt.yaw == 0)) // send again, ensure stop.
+            {
+                rt_thread_delay(10);
                 pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
                 rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                
-                if ((ctrlpkt.roll == 0) || (ctrlpkt.pitch == 0) || (ctrlpkt.yaw == 0)) // send again, ensure stop.
-                {
-                    rt_thread_delay(10);
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                    rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
-                    rt_thread_delay(10);
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                    rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
-                }
+                rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
+                rt_thread_delay(10);
+                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+                rt_memcpy(pbuf, &ctrlpkt, pktsz);
+                rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
             }
         }
         else if (env->user_incharge)
         {
             env->user_incharge = RT_FALSE;
+
+            rt_int16_t dval_pitch, dval_yaw, dval_roll = 0;
+            LOG_D("PANTILT_ACTION_OTHER, %d", env->ptz_action);
             
-            if (env->ptz_action == PANTILT_ACTION_IRCOLOR)
-            {
-                env->ptz_action = PANTILT_ACTION_NULL;
-                LOG_D("PANTILT_ACTION_IRCOLOR");
-                
-                switch(env->irs_color)
-                {
-                    case 0:
-                        rt_memcpy(irs_control_frame, irs_color[0], IRSENSOR_FRAME_SIZE);
-                        break;
-                    case 1:
-                        rt_memcpy(irs_control_frame, irs_color[1], IRSENSOR_FRAME_SIZE);
-                        break;
-                    case 2:
-                        rt_memcpy(irs_control_frame, irs_color[2], IRSENSOR_FRAME_SIZE);
-                        break;
-                    default:
-                        rt_memcpy(irs_control_frame, irs_color[3], IRSENSOR_FRAME_SIZE);
-                        break;
-                }
+            pktsz = sizeof(ptz_serialctrlpkt);
+            rt_memset(&ctrlpkt, 0x00, pktsz);
+                        
+            ctrlpkt.HEADER = PANTILT_PKT_HEADER;
 
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, irs_control_frame, IRSENSOR_FRAME_SIZE);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-            }
-            else if (env->ptz_action == PANTILT_ACTION_IRZOOM)
-            {
-                env->ptz_action = PANTILT_ACTION_NULL;
-                LOG_D("PANTILT_ACTION_IRZOOM");
-                
-//                pktsz = IRSENSOR_ZOOM_PKT_SIZE;
-//                
-//                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-//                
-//                if (env->irs_zoom > 7)
-//                    env->irs_zoom = 7;
-//                
-//                rt_memcpy(pbuf, irs_zoom[env->irs_zoom], pktsz);
-//                rt_mb_send(mailbox, (rt_ubase_t)pbuf);                
-            }
-            else if (env->ptz_action == PANTILT_ACTION_CALIBRATE)
-            {
-                LOG_D("PANTILT_ACTION_CALIBRATE");
-                env->ptz_action = PANTILT_ACTION_NULL;
-                
-                for (int i = 0; i < 4; i++)
-                {
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, calib_protcol[i], PANTILT_CALIB_PKT_SIZE);
-                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                    rt_thread_delay(200);
-                }
-            }
-            else if (env->ptz_action == PANTILT_ACTION_HOMING)
-            {
-                LOG_D("PANTILT_ACTION_HOMING");
-                
-                pktsz = sizeof(ptz_serialctrlpkt);
-                
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;
-                
-                ctrlpkt.homing = 0x9BFE;
-                pantilt_update_checksum(&ctrlpkt);
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                
-                rt_thread_delay(100);
-                
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;               
-                ctrlpkt.homing = 0x0000;
-                pantilt_update_checksum(&ctrlpkt);
-                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-            }
-            else
-            {
-                rt_int16_t dval_pitch, dval_yaw, dval_roll = 0;
-                LOG_D("PANTILT_ACTION_OTHER, %d", env->ptz_action);
-                
-                pktsz = sizeof(ptz_serialctrlpkt);
-                rt_memset(&ctrlpkt, 0x00, pktsz);
-                            
-                ctrlpkt.HEADER = PANTILT_PKT_HEADER;
-
-//                dval_roll = env->ch_value[0] - SBUS_VALUE_MEDIAN;    // roll
-//                if (abs(dval_roll) < SBUS_VALUE_IGNORE)
-//                    dval_roll = 0;
+//            dval_roll = env->ch_value[0] - SBUS_VALUE_MEDIAN;    // roll
+//            if (abs(dval_roll) < SBUS_VALUE_IGNORE)
+//                dval_roll = 0;
+//            else
+//            {
+//                if (dval_roll < 0)
+//                    dval_roll = PANTILT_VALUE_MININUM;
 //                else
-//                {
-//                    if (dval_roll < 0)
-//                        dval_roll = PANTILT_VALUE_MININUM;
-//                    else
-//                        dval_roll = PANTILT_VALUE_MAXIMUM;
-//                }
-                
-                dval_pitch = env->ch_value[1] - SBUS_VALUE_MEDIAN;    // pitch
-                if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
-                    dval_pitch = 0;
-               
-                dval_yaw = env->ch_value[3] - SBUS_VALUE_MEDIAN;    // yaw
-                if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
-                    dval_yaw = 0;
-                
-                switch(env->cam_pip_mode)
-                {
-                    case 1:
-                    case 3:
-                    default:
-                        ctrlpkt.pitch   = dval_pitch * PANTILT_VALUE_RATIO * ZOOM2RATIO[env->cam_zoom_pos];
-                        ctrlpkt.yaw     = dval_yaw * PANTILT_VALUE_RATIO * ZOOM2RATIO[env->cam_zoom_pos];
-                        break;
-                    case 2:
-                    case 4:
-                        ctrlpkt.pitch   = dval_pitch * IR2RATIO;
-                        ctrlpkt.yaw     = dval_yaw * IR2RATIO;
-                        break;
-                }
-                
+//                    dval_roll = PANTILT_VALUE_MAXIMUM;
+//            }
+            
+            dval_pitch = env->ch_value[1] - SBUS_VALUE_MEDIAN;    // pitch
+            if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
+                dval_pitch = 0;
+           
+            dval_yaw = env->ch_value[3] - SBUS_VALUE_MEDIAN;    // yaw
+            if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
+                dval_yaw = 0;
+            
+            switch(env->cam_pip_mode)
+            {
+                case 1:
+                case 3:
+                default:
+                    ctrlpkt.pitch   = dval_pitch * PANTILT_VALUE_RATIO * ZOOM2RATIO[env->cam_zoom_pos];
+                    ctrlpkt.yaw     = dval_yaw * PANTILT_VALUE_RATIO * ZOOM2RATIO[env->cam_zoom_pos];
+                    break;
+                case 2:
+                case 4:
+                    ctrlpkt.pitch   = dval_pitch * IR2RATIO;
+                    ctrlpkt.yaw     = dval_yaw * IR2RATIO;
+                    break;
+            }
+            
 //                ctrlpkt.roll = dval_roll;
-                
-                if (env->ptz_action == PANTILT_ACTION_HEADFREE)
-                    ctrlpkt.mode = 0x0000;
-                else if (env->ptz_action == PANTILT_ACTION_HEADLOCK)
-                    ctrlpkt.mode = 0x6400;               
-                else if (env->ptz_action == PANTILT_ACTION_HEADDOWN)
-                    ctrlpkt.mode = 0x9BFE;               
-                
-                pantilt_update_checksum(&ctrlpkt);
-                   
+            
+            if (env->ptz_action == PANTILT_ACTION_HEADFREE)
+                ctrlpkt.mode = 0x0000;
+            else if (env->ptz_action == PANTILT_ACTION_HEADLOCK)
+                ctrlpkt.mode = 0x6400;               
+            else if (env->ptz_action == PANTILT_ACTION_HEADDOWN)
+                ctrlpkt.mode = 0x9BFE;               
+            
+            pantilt_update_checksum(&ctrlpkt);
+               
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, &ctrlpkt, pktsz);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+            
+            if ((ctrlpkt.roll == 0) && (ctrlpkt.pitch == 0) && (ctrlpkt.yaw && 0) && (env->ptz_action == PANTILT_ACTION_NULL)) // send again, ensure stop.
+            {
+                rt_thread_delay(10);
                 pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
                 rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                
-                if ((ctrlpkt.roll == 0) && (ctrlpkt.pitch == 0) && (ctrlpkt.yaw && 0) && (env->ptz_action == PANTILT_ACTION_NULL)) // send again, ensure stop.
-                {
-                    rt_thread_delay(10);
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                    rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
-                    rt_thread_delay(10);
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                    rt_mb_send(mailbox,  (rt_ubase_t)pbuf);                       
-                }
+                rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
+                rt_thread_delay(10);
+                pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+                rt_memcpy(pbuf, &ctrlpkt, pktsz);
+                rt_mb_send(mailbox,  (rt_ubase_t)pbuf);                       
             }
         }
     }
     
     // never be here.
 }
-

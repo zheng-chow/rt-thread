@@ -9,6 +9,13 @@ config SOC_STM32H750VB
 
 menu "Onboard Peripheral Drivers"
 
+    config BSP_USING_QSPI_FLASH
+        bool "Enable QSPI FLASH (W25Q128 qspi1)"
+        select BSP_USING_QSPI
+        select RT_USING_SFUD
+        select RT_SFUD_USING_QSPI
+        default n
+
 endmenu
 
 menu "On-chip Peripheral Drivers"
@@ -25,26 +32,64 @@ menu "On-chip Peripheral Drivers"
         if BSP_USING_UART
             config BSP_USING_UART1
                 bool "Enable UART1"
-                default y   
+                default y
+
+            config BSP_UART1_RX_USING_DMA
+                bool "Enable UART1 RX DMA"
+                depends on BSP_USING_UART1 && RT_SERIAL_USING_DMA
+                default n
+
             config BSP_USING_UART2
                 bool "Enable UART2"
                 default y
+
+             config BSP_UART2_RX_USING_DMA
+                bool "Enable UART2 RX DMA"
+                depends on BSP_USING_UART2 && RT_SERIAL_USING_DMA
+                default n
+                           
             config BSP_USING_UART3
                 bool "Enable UART3"
                 default y
+
+             config BSP_UART3_RX_USING_DMA
+                bool "Enable UART3 RX DMA"
+                depends on BSP_USING_UART3 && RT_SERIAL_USING_DMA
+                default n
+
             config BSP_USING_UART4
                 bool "Enable UART4"
                 default y
+
+             config BSP_UART4_RX_USING_DMA
+                bool "Enable UART4 RX DMA"
+                depends on BSP_USING_UART4 && RT_SERIAL_USING_DMA
+                default n
+
             config BSP_USING_UART6
                 bool "Enable UART6"
-                default y 
+                default y
+            
+             config BSP_UART6_RX_USING_DMA
+                bool "Enable UART6 RX DMA"
+                depends on BSP_USING_UART6 && RT_SERIAL_USING_DMA
+                default n
 
         endif
+
+    config BSP_USING_QSPI
+        bool "Enable QSPI BUS"
+        select RT_USING_QSPI
+        select RT_USING_SPI
+        default n
+
+    config BSP_QSPI_USING_DMA
+        bool "Enable QSPI DMA support"
+        default n
 
     config BSP_USING_WDT
         bool "Enable Watchdog Timer"
         select RT_USING_WDT
-        select 
         default y
         
     source "../libraries/HAL_Drivers/Kconfig"
