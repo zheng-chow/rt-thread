@@ -20,7 +20,7 @@
 #define DBG_COLOR
 #include <rtdbg.h>
 
-#define ZINGTO_UARTPORT_NAME   "uart1"
+#define ZINGTO_UARTPORT_NAME   "uart5"
 #define ZINGTO_SEMAPHORE_NAME  "shZINGTO"
 
 
@@ -159,16 +159,20 @@ void zingto_resolving_entry(void* parameter)
             break;
         case 0x05:  // zoom out
             if (speedlv < 2) 
-                speedlv = 2;
-            env->cam_zoom_speed = speedlv;
+                env->cam_zoom_speed = 2;
+            else
+                env->cam_zoom_speed = speedlv;
+            
             cam_eval = CAMERA_CMD_ZOOM_OUT;
             cam_eval |= CAMERA_CMD_ZOOM_GETPOS;
             cam_request = RT_TRUE;
             break;
         case 0x06:  // zoom in
             if (speedlv < 2) 
-                speedlv = 2;
-            env->cam_zoom_speed = speedlv;
+                env->cam_zoom_speed = 2;
+            else
+                env->cam_zoom_speed = speedlv;
+            
             cam_eval = CAMERA_CMD_ZOOM_IN;
             cam_eval |= CAMERA_CMD_ZOOM_GETPOS;
             cam_request = RT_TRUE;

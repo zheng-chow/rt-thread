@@ -51,7 +51,11 @@ static rt_err_t stm32_adc_enabled(struct rt_adc_device *device, rt_uint32_t chan
 
     if (enabled)
     {
+<<<<<<< Updated upstream
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined (SOC_SERIES_STM32MP1)
+=======
+#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined(SOC_SERIES_STM32H7)
+>>>>>>> Stashed changes
         ADC_Enable(stm32_adc_handler);
 #else
         __HAL_ADC_ENABLE(stm32_adc_handler);
@@ -59,7 +63,11 @@ static rt_err_t stm32_adc_enabled(struct rt_adc_device *device, rt_uint32_t chan
     }
     else
     {
+<<<<<<< Updated upstream
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined (SOC_SERIES_STM32MP1)
+=======
+#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined(SOC_SERIES_STM32H7)
+>>>>>>> Stashed changes
         ADC_Disable(stm32_adc_handler);
 #else
         __HAL_ADC_DISABLE(stm32_adc_handler);
@@ -123,23 +131,21 @@ static rt_uint32_t stm32_adc_get_channel(rt_uint32_t channel)
     case 15:
         stm32_channel = ADC_CHANNEL_15;
         break;
-#ifdef ADC_CHANNEL_16
     case 16:
         stm32_channel = ADC_CHANNEL_16;
         break;
-#endif
     case 17:
         stm32_channel = ADC_CHANNEL_17;
         break;
-#ifdef ADC_CHANNEL_18
+#if defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32F2) || defined(SOC_SERIES_STM32F4) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32H7)
     case 18:
         stm32_channel = ADC_CHANNEL_18;
         break;
-#endif
-#ifdef ADC_CHANNEL_19
-    case 19:
+#if  defined(SOC_SERIES_STM32H7)
+		    case 19:
         stm32_channel = ADC_CHANNEL_19;
         break;
+#endif		
 #endif
     }
 
@@ -158,23 +164,13 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
 
     rt_memset(&ADC_ChanConf, 0, sizeof(ADC_ChanConf));
 
-#ifndef ADC_CHANNEL_16
-    if (channel == 16)
-    {
-        LOG_E("ADC channel must not be 16.");
-        return -RT_ERROR;
-    }
-#endif
-
-/* ADC channel number is up to 17 */
-#if !defined(ADC_CHANNEL_18)
+#if defined(SOC_SERIES_STM32F1)
     if (channel <= 17)
-/* ADC channel number is up to 19 */
-#elif defined(ADC_CHANNEL_19)
-    if (channel <= 19)
-/* ADC channel number is up to 18 */
-#else
+#elif defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32F2)  || defined(SOC_SERIES_STM32F4) || defined(SOC_SERIES_STM32F7) \
+        || defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0)
     if (channel <= 18)
+#elif  defined(SOC_SERIES_STM32H7)
+		  if (channel <= 19)
 #endif
     {
         /* set stm32 ADC channel */
@@ -182,22 +178,30 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
     }
     else
     {
-#if !defined(ADC_CHANNEL_18)
+#if defined(SOC_SERIES_STM32F1)
         LOG_E("ADC channel must be between 0 and 17.");
-#elif defined(ADC_CHANNEL_19)
-        LOG_E("ADC channel must be between 0 and 19.");
-#else
+#elif defined(SOC_SERIES_STM32F0) || defined(SOC_SERIES_STM32F2)  || defined(SOC_SERIES_STM32F4) || defined(SOC_SERIES_STM32F7) \
+        || defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0)
         LOG_E("ADC channel must be between 0 and 18.");
+#elif  defined(SOC_SERIES_STM32H7)
+        LOG_E("ADC channel must be between 0 and 19.");
 #endif
         return -RT_ERROR;
     }
+<<<<<<< Updated upstream
     
 #if defined(SOC_SERIES_STM32MP1)
+=======
+#if defined(SOC_SERIES_STM32H7)
+>>>>>>> Stashed changes
     ADC_ChanConf.Rank = ADC_REGULAR_RANK_1;
 #else
     ADC_ChanConf.Rank = 1;
 #endif
+<<<<<<< Updated upstream
     
+=======
+>>>>>>> Stashed changes
 #if defined(SOC_SERIES_STM32F0)
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_71CYCLES_5;
 #elif defined(SOC_SERIES_STM32F1)
@@ -206,6 +210,7 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_112CYCLES;
 #elif defined(SOC_SERIES_STM32L4)
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_247CYCLES_5;
+<<<<<<< Updated upstream
 #elif defined(SOC_SERIES_STM32MP1)
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_810CYCLES_5;
 #endif
@@ -215,6 +220,15 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
 #endif
 
 #if defined(SOC_SERIES_STM32L4)
+=======
+#elif defined(SOC_SERIES_STM32H7)
+    ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_387CYCLES_5;
+#endif
+#if defined(SOC_SERIES_STM32F2) || defined(SOC_SERIES_STM32F4) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32H7)
+    ADC_ChanConf.Offset = 0;
+#endif
+#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32H7)
+>>>>>>> Stashed changes
     ADC_ChanConf.OffsetNumber = ADC_OFFSET_NONE;
     ADC_ChanConf.SingleDiff = LL_ADC_SINGLE_ENDED;
 #elif defined(SOC_SERIES_STM32MP1)
@@ -222,6 +236,11 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
     ADC_ChanConf.Offset       = 0; 
     ADC_ChanConf.SingleDiff   = ADC_SINGLE_ENDED; /* ADC channel differential mode */
 #endif
+#if defined(SOC_SERIES_STM32H7)
+    ADC_ChanConf.OffsetRightShift       = DISABLE;           
+    ADC_ChanConf.OffsetSignedSaturation = DISABLE;                 
+#endif
+
     HAL_ADC_ConfigChannel(stm32_adc_handler, &ADC_ChanConf);
 
     /* perform an automatic ADC calibration to improve the conversion accuracy */
@@ -294,7 +313,12 @@ static int stm32_adc_init(void)
             result = -RT_ERROR;
         }
         else
-        {
+        {  
+            if (HAL_ADCEx_Calibration_Start(&stm32_adc_obj[i].ADC_Handler, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK)
+            {
+                LOG_E("%s calibrate failed", name_buf);
+                result = -RT_ERROR;
+            }
             /* register ADC device */
             if (rt_hw_adc_register(&stm32_adc_obj[i].stm32_adc_device, name_buf, &stm_adc_ops, &stm32_adc_obj[i].ADC_Handler) == RT_EOK)
             {

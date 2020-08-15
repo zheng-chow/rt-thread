@@ -15,9 +15,10 @@
 /* defined the PoWer SiWtch pin: PA4 */
 #define PWSW_PIN        GET_PIN(A, 4)
 
-#define RXBUFF_SIZE         (128)
-#define MAIL_SIZE           (128)
+#define RXBUFF_SIZE         (128 + 32)
+#define MAIL_SIZE           (128 + 32)
 #define THREAD_STACK_SIZE   (1024)
+#define THREAD_STACK_SIZE2  (1024)
 #define MIN_RX_INTERVAL     (5)         // 5ms timeout
 
 #define PKT_HEADER          (0x3E)
@@ -34,7 +35,9 @@
 ** UART3: other serial data port.
 */
 
-static rt_mp_t      mpUartTX = RT_NULL;
+static rt_mp_t      mpUart1Tx = RT_NULL;
+static rt_mp_t      mpUart2Tx = RT_NULL;
+static rt_mp_t      mpUart3Tx = RT_NULL;
 
 static rt_mailbox_t mbUart1Tx = RT_NULL;
 static rt_mailbox_t mbUart2Tx = RT_NULL;
@@ -109,7 +112,7 @@ static void uart1_send_entry(void* parameter){
     
     while (1){
         rt_mb_recv(mbUart1Tx, (rt_ubase_t*)&pMail, RT_WAITING_FOREVER);
-        if (pMail == 0) continue;
+        if (pMail == RT_NULL) continue;
 
         rt_device_write(devUart, 0, &pMail->payload[0], pMail->size);
         rt_mp_free(pMail);
@@ -125,7 +128,7 @@ static void uart2_send_entry(void* parameter){
     
     while (1){
         rt_mb_recv(mbUart2Tx, (rt_ubase_t *)&pMail, RT_WAITING_FOREVER);
-        if (pMail == 0) continue;
+        if (pMail == RT_NULL) continue;
 
         rt_device_write(devUart, 0, &pMail->payload[0], pMail->size);
         rt_mp_free(pMail);
@@ -135,42 +138,13 @@ static void uart2_send_entry(void* parameter){
 static void uart3_send_entry(void* parameter){
 
     struct PKT_MAIL* pMail = RT_NULL;
-    rt_err_t result;
     
     rt_device_t devUart = rt_device_find("uart3");
     RT_ASSERT(devUart);
     
     while (1){
         rt_mb_recv(mbUart3Tx, (rt_ubase_t *)&pMail, RT_WAITING_FOREVER);
-        if (pMail == 0) continue;
-        
-        if (pMail->size == 5) {
-            //rt_kprintf("%02X %02X %02X %02X %02X\r\n", pMail->payload[0], pMail->payload[1], pMail->payload[2], pMail->payload[3], pMail->payload[4]);
-            
-            if ( ( pMail->payload[0] == 0xE1) && (pMail->payload[1] == 0x1E) && (pMail->payload[3] == 0xF1) && (pMail->payload[4] == 0x1F) ) {
-                    switch(pMail->payload[2]) {
-                        case 0x12:  //ask angel
-                            // 3E 19 00 19 00
-                            pMail->payload[0] = 0x3E;
-                            pMail->payload[1] = 0x19;
-                            pMail->payload[2] = 0x00;
-                            pMail->payload[3] = 0x19;
-                            pMail->payload[4] = 0x00;
-                        
-                            pMail->size = 5;
-                        
-                            result = rt_mb_send(mbUart2Tx, (rt_ubase_t)pMail);
-                            if (RT_EOK != result) {
-                                rt_kprintf("tTX3: mb send TX2 wrong\n");
-                                rt_mp_free(pMail);
-                            }
-                            continue;
-                            //break;
-                        default:
-                            break;
-                    }
-            }
-        }
+        if (pMail == RT_NULL) continue;
         
         rt_device_write(devUart, 0, &pMail->payload[0], pMail->size);
         rt_mp_free(pMail);
@@ -178,7 +152,7 @@ static void uart3_send_entry(void* parameter){
 }
 
 ALIGN(RT_ALIGN_SIZE)
-static rt_uint8_t uart1_rx_stack[THREAD_STACK_SIZE];
+static rt_uint8_t uart1_rx_stack[THREAD_STACK_SIZE2];
 static struct rt_thread uart1_rx_thread;
 static void uart1_rx_entry(void* parameter)
 {
@@ -188,13 +162,12 @@ static void uart1_rx_entry(void* parameter)
     rt_size_t  szBGC;
     rt_err_t result = RT_EOK; 
     rt_bool_t isSBGC = RT_FALSE;
-    rt_bool_t isZGTO = RT_FALSE;
     struct PKT_MAIL *pMail;
     
     pUart1 = rt_device_find("uart1");
     RT_ASSERT(pUart1 != RT_NULL);
     
-    rt_device_open(pUart1, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_DMA_TX);
+    rt_device_open(pUart1, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX); // | RT_DEVICE_FLAG_DMA_TX 
     
     // set uart1's baudrate to 115200
     struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
@@ -222,20 +195,21 @@ static void uart1_rx_entry(void* parameter)
             
             szBGC += rt_device_read(pUart1, 0, pBGC + szBGC, 1);
             
-            if (isSBGC == RT_FALSE)
+            if (isSBGC == RT_FALSE) {
+                RT_ASSERT(szBuf < RXBUFF_SIZE);
                 pBuf[szBuf++] = pBGC[szBGC - 1];
+            }
             
             switch (szBGC - 1){
             case HEADER_OFFSET:
                 if ( pBGC[HEADER_OFFSET] != PKT_HEADER ){
                     szBGC = 0;
                 }
-                continue;
-                //break;
+                break;
             case COMMAND_OFFSET:
             case PAYLOAD_SIZE_OFFSET:
                 continue;
-                //break;
+                //break
             case HEADER_CKSUM_OFFSET:
 
                 if ( pBGC[HEADER_CKSUM_OFFSET] == pBGC[COMMAND_OFFSET] + pBGC[PAYLOAD_SIZE_OFFSET] ) {
@@ -246,9 +220,8 @@ static void uart1_rx_entry(void* parameter)
                 }
                 else
                     szBGC = 0;
-               
-                continue;
-                //break;
+
+               break;
             default:
                 break;
             }
@@ -259,79 +232,178 @@ static void uart1_rx_entry(void* parameter)
             if (szBuf == 0)
                 continue;
             
-            pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUartTX, RT_WAITING_FOREVER);
-            if (pMail == RT_NULL) continue;
-            
-            pMail->size = szBuf;
-            rt_memcpy(&pMail->payload[0], pBuf, szBuf);
-            rt_kprintf("%d: TIMOUT, send %d\r\n", rt_tick_get(), szBuf);
-            result = rt_mb_send(mbUart3Tx, (rt_ubase_t)pMail);
-            if (RT_EOK != result) {
-                rt_kprintf("tRX1: mb send TX3 wrong\n");
-                rt_mp_free(pMail);
+            if (szBuf == 5) {
+                if ( ( pBuf[0] == 0xE1) && (pBuf[1] == 0x1E) && (pBuf[2] == 0x12) && (pBuf[3] == 0xF1) && (pBuf[4] == 0x1F) ) {
+
+                    pBuf[0] = 0x3E;
+                    pBuf[1] = 0x19;
+                    pBuf[2] = 0x00;
+                    pBuf[3] = 0x19;
+                    pBuf[4] = 0x00;
+                
+                    pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUart2Tx, RT_WAITING_NO);
+                    if (pMail != RT_NULL) {
+                        pMail->size = szBuf;
+                        rt_memcpy(&pMail->payload[0], pBuf, szBuf);
+                        result = rt_mb_send(mbUart2Tx, (rt_ubase_t)pMail);
+
+                        if (RT_EOK != result) {
+                            rt_kprintf("%d, tRX1: mb send TX2 wrong\n", rt_tick_get());
+                            rt_mp_free(pMail);
+                            rt_thread_delay(1);
+                        }
+                    }
+                    else {
+                        rt_kprintf("%d, timeout to tx3, loop\n", rt_tick_get());
+                        while(1);
+                    }
+                    
+                    rt_memset(pBuf, 0x00, szBuf);
+                    szBuf = 0;
+                    
+                    continue;
+                }
+            }
+
+            pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUart3Tx, RT_WAITING_NO);
+            if (pMail != RT_NULL) {
+                pMail->size = szBuf;
+                rt_memcpy(&pMail->payload[0], pBuf, szBuf);
+                //rt_kprintf("%d: TIMOUT, send %d\r\n", rt_tick_get(), szBuf);
+                result = rt_mb_send(mbUart3Tx, (rt_ubase_t)pMail);
+                if (RT_EOK != result) {
+                    rt_kprintf("%d, tRX1: mb send TX3 wrong\n", rt_tick_get());
+                    rt_mp_free(pMail);
+                    while(1);
+                }                
+            }
+            else {
+                rt_kprintf("%d, timeout to tx3, loop\n", rt_tick_get());
+                while(1);
             }
             
             rt_memset(pBuf, 0x00, szBuf);
-            szBuf = 0;                
+            szBuf = 0;
         }
         
         if (isSBGC == RT_TRUE) {
             // if recvive unfinish, then contiune.
-            if (szBGC != pBGC[PAYLOAD_SIZE_OFFSET] + 5 )
+            if (szBGC != pBGC[PAYLOAD_SIZE_OFFSET] + 5 ) {
+                if (szBGC > RXBUFF_SIZE)
+                    rt_kprintf("PAYLOAD SIZE OVERSIZE, %d\n", szBGC);
                 continue;
+            }
+
             // clear the flag.
             isSBGC = RT_FALSE;
             // send BGC packet to uart2.
-            pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUartTX, RT_WAITING_FOREVER);
-            if (pMail == RT_NULL) continue;
-            
-            pMail->size = szBGC;
-            rt_memcpy(&pMail->payload[0], pBGC, szBGC);
-            //rt_kprintf("%d, sBGC\n", rt_tick_get());
-            result = rt_mb_send(mbUart2Tx, (rt_ubase_t)pMail);
-            if (RT_EOK != result) {
-                rt_kprintf("tRX1: mb send TX2 wrong\n");
-                rt_mp_free(pMail);
+            pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUart2Tx, RT_WAITING_NO);
+            if (pMail != RT_NULL) {
+                pMail->size = szBGC;
+                rt_memcpy(&pMail->payload[0], pBGC, szBGC);
+
+                result = rt_mb_send(mbUart2Tx, (rt_ubase_t)pMail);
+                
+                if (RT_EOK != result) {
+                    rt_kprintf("%d, tRX1: mb send TX2 wrong\n", rt_tick_get());
+                    rt_mp_free(pMail);
+                    while(1);
+                }
             }
+            else {
+                rt_kprintf("%d, E11E12F11F, 1 loop\n", rt_tick_get());
+                while(1);
+            }
+
             rt_memset(pBGC, 0x00, szBGC);
             szBGC = 0;
                 
             // send other data to uart3.
-            if (szBuf != 0) {
+            if (szBuf == 0) continue;
                 
-                pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUartTX, RT_WAITING_FOREVER);
-                if (pMail == RT_NULL) continue;
-                
+            if (szBuf == 5) {
+                if ( ( pBuf[0] == 0xE1) && (pBuf[1] == 0x1E) && (pBuf[2] == 0x12) && (pBuf[3] == 0xF1) && (pBuf[4] == 0x1F) ) {
+                    pBuf[0] = 0x3E;
+                    pBuf[1] = 0x19;
+                    pBuf[2] = 0x00;
+                    pBuf[3] = 0x19;
+                    pBuf[4] = 0x00;
+
+                    pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUart2Tx, RT_WAITING_NO);
+                    if (pMail != RT_NULL) {
+                        pMail->size = szBuf;
+                        rt_memcpy(&pMail->payload[0], pBuf, szBuf);
+                        result = rt_mb_send(mbUart2Tx, (rt_ubase_t)pMail);
+
+                        if (mpUart2Tx->block_free_count < 5)
+                            rt_kprintf("%d, 2 mempool free: %d\n", rt_tick_get(), mpUart2Tx->block_free_count);
+                        
+                        if (RT_EOK != result) {
+                            rt_kprintf("%d, tRX1: mb send TX2 wrong\n", rt_tick_get());
+                            rt_mp_free(pMail);
+                            while(1);
+                        }
+                    }
+                    else {
+                        rt_kprintf("%d, E11E12F11F, 2 loop\n", rt_tick_get());
+                        while(1);
+                    }
+                            
+                    rt_memset(pBuf, 0x00, szBuf);
+                    szBuf = 0;
+                            
+                    continue;
+                }
+            }
+
+            pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUart3Tx, RT_WAITING_NO);
+
+            if (pMail != RT_NULL) {
                 pMail->size = szBuf;
                 rt_memcpy(&pMail->payload[0], pBuf, szBuf);
-                rt_kprintf("%d: MOVING, send %d\r\n", rt_tick_get(), szBuf);
+
                 result = rt_mb_send(mbUart3Tx, (rt_ubase_t)pMail);
                 if (RT_EOK != result) {
-                    rt_kprintf("tRX1: mb send TX3 wrong\n");
+                    rt_kprintf("%d, tRX1: mb send TX3 wrong\n", rt_tick_get());
                     rt_mp_free(pMail);
+                    while(1);
                 }
-                
-                rt_memset(pBuf, 0x00, szBuf);
-                szBuf = 0;
             }
+            else {
+                rt_kprintf("%d: other to tx3, loop\n", rt_tick_get());
+                while(1);                
+            }
+
+            rt_memset(pBuf, 0x00, szBuf);
+            szBuf = 0;
         }
         else {
             // if buffer is full, send data to uart3 and clear it.
-            if ( szBuf == MAIL_SIZE - sizeof(rt_uint8_t) ) {
-                pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUartTX, RT_WAITING_FOREVER);
-                if (pMail == RT_NULL) continue;
-                
-                pMail->size = szBuf;
-                rt_memcpy(&pMail->payload[0], pBuf, szBuf);
-                rt_kprintf("%d: OVERSZ, send %d\r\n", rt_tick_get(), szBuf);
-                result = rt_mb_send(mbUart3Tx, (rt_ubase_t)pMail);
-                if (RT_EOK != result) {
-                    rt_kprintf("tRX1: mb send TX3 wrong\n");
-                    rt_mp_free(pMail);
+            if ( szBuf == MAIL_SIZE - sizeof(rt_uint8_t)) {
+
+                pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUart3Tx, RT_WAITING_NO);
+                if (pMail != RT_NULL) {
+                    pMail->size = szBuf;
+                    rt_memcpy(&pMail->payload[0], pBuf, szBuf);
+                    rt_kprintf("%d: OVERSZ, send %d\r\n", rt_tick_get(), szBuf);
+                    result = rt_mb_send(mbUart3Tx, (rt_ubase_t)pMail);
+                    if (RT_EOK != result) {
+                        rt_kprintf("%d, tRX1: mb send TX3 wrong\n", rt_tick_get());
+                        rt_mp_free(pMail);
+                        while(1);
+                    }
                 }
-                
+                else {
+                    rt_kprintf("%d: oversize to tx3, loop\n", rt_tick_get());
+                    while(1);
+                }
+
                 rt_memset(pBuf, 0x00, szBuf);
-                szBuf = 0;                
+                
+                if (szBGC < 4)
+                    szBuf = szBGC;
+                else
+                    szBuf = 0;
             }
         }
 
@@ -352,7 +424,7 @@ static void uart2_rx_entry(void* parameter)
     pUart2 = rt_device_find("uart2");
     RT_ASSERT(pUart2 != RT_NULL);
     
-    rt_device_open(pUart2, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_DMA_TX);
+    rt_device_open(pUart2, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX); // | RT_DEVICE_FLAG_DMA_TX
     
     // set uart2's baudrate to 115200
     struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
@@ -374,15 +446,17 @@ static void uart2_rx_entry(void* parameter)
         if(result != -RT_ETIMEOUT) {
             /* read 1 byte form uart fifo ringbuffer */
             szbuf += rt_device_read(pUart2, 0, pbuf + szbuf, 1);
-            continue;
+            
+            if (szbuf < RXBUFF_SIZE - sizeof(rt_uint8_t))
+                continue;
         }
         else {
             if (szbuf == 0)
                 continue;       // ignore idle frame.
         }
         
-        pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUartTX, RT_WAITING_FOREVER);
-        if (pMail == RT_NULL) continue;
+        pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUart1Tx, RT_WAITING_NO);
+        if (pMail == RT_NULL) while(1);
         
         rt_memset(pMail, 0x00, MAIL_SIZE);
             
@@ -395,6 +469,7 @@ static void uart2_rx_entry(void* parameter)
         {
             rt_kprintf("tRX2: mb send wrong\n");
             rt_mp_free(pMail);
+            rt_thread_delay(1);
         }
         
         szbuf = 0;
@@ -415,7 +490,7 @@ static void uart3_rx_entry(void* parameter)
     pUart3 = rt_device_find("uart3");
     RT_ASSERT(pUart3 != RT_NULL);
     
-    rt_device_open(pUart3, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX); //| RT_DEVICE_FLAG_DMA_TX
+    rt_device_open(pUart3, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX ); //| RT_DEVICE_FLAG_DMA_TX
     
     // set uart3's baudrate to 115200
     struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
@@ -439,15 +514,17 @@ static void uart3_rx_entry(void* parameter)
         if(result != -RT_ETIMEOUT) {
             /* read 1 byte form uart fifo ringbuffer */
             szbuf += rt_device_read(pUart3, 0, pbuf + szbuf, 1);
-            continue;
+            
+            if (szbuf < RXBUFF_SIZE - sizeof(rt_uint8_t))
+                continue;
         }
         else {
             if (szbuf == 0)
                 continue;       // ignore idle frame.
         }
         
-        pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUartTX, RT_WAITING_FOREVER);
-        if (pMail == RT_NULL) continue;
+        pMail = (struct PKT_MAIL *)rt_mp_alloc(mpUart1Tx, RT_WAITING_NO);
+        if (pMail == RT_NULL) while(1);
         
         rt_memset(pMail, 0x00, MAIL_SIZE);
             
@@ -460,6 +537,7 @@ static void uart3_rx_entry(void* parameter)
         {
             rt_kprintf("tRX3: mb send wrong\n");
             rt_mp_free(pMail);
+            rt_thread_delay(1);
         }
         
         szbuf = 0;
@@ -500,32 +578,36 @@ int main(void)
     sUart3 = rt_sem_create("sRX3", 0, RT_IPC_FLAG_FIFO);
     RT_ASSERT(sUart3 != RT_NULL);
     
-    mpUartTX = rt_mp_create("mpTX", 6, MAIL_SIZE);
-    RT_ASSERT(mpUartTX != RT_NULL);
+    mpUart1Tx = rt_mp_create("mpTX1", 3, MAIL_SIZE);
+    RT_ASSERT(mpUart1Tx != RT_NULL);
+    mpUart2Tx = rt_mp_create("mpTX2", 6, MAIL_SIZE);
+    RT_ASSERT(mpUart2Tx != RT_NULL);    
+    mpUart3Tx = rt_mp_create("mpTX3", 3, MAIL_SIZE);
+    RT_ASSERT(mpUart3Tx != RT_NULL);
     
     mbUart1Tx = rt_mb_create("mbTX1", 3, RT_IPC_FLAG_FIFO);
     RT_ASSERT(mbUart1Tx != RT_NULL);
-    mbUart2Tx = rt_mb_create("mbTX2", 3, RT_IPC_FLAG_FIFO);
+    mbUart2Tx = rt_mb_create("mbTX2", 5, RT_IPC_FLAG_FIFO);
     RT_ASSERT(mbUart2Tx != RT_NULL);
     mbUart3Tx = rt_mb_create("mbTX3", 3, RT_IPC_FLAG_FIFO);
     RT_ASSERT(mbUart3Tx != RT_NULL);
     
-    tid = rt_thread_create("tTX1", uart1_send_entry, NULL, THREAD_STACK_SIZE, 9, 20);
+    tid = rt_thread_create("tTX1", uart1_send_entry, NULL, THREAD_STACK_SIZE, 7, 50);
     if (tid != RT_NULL) rt_thread_startup(tid);    
     
-    tid = rt_thread_create("tTX2", uart2_send_entry, NULL, THREAD_STACK_SIZE, 9, 20);
+    tid = rt_thread_create("tTX2", uart2_send_entry, NULL, THREAD_STACK_SIZE2, 5, 50);
     if (tid != RT_NULL) rt_thread_startup(tid);    
     
-    tid = rt_thread_create("tTX3", uart3_send_entry, NULL, THREAD_STACK_SIZE, 9, 20);
+    tid = rt_thread_create("tTX3", uart3_send_entry, NULL, THREAD_STACK_SIZE, 6, 50);
     if (tid != RT_NULL) rt_thread_startup(tid);
-    
+
 	/* init uart1 rx thread */
 	result = rt_thread_init(&uart1_rx_thread, 
                             "tRX1",
 							uart1_rx_entry,
 							RT_NULL,
                             (rt_uint8_t*)&uart1_rx_stack[0],
-                            sizeof(uart1_rx_stack), 9, 20);
+                            sizeof(uart1_rx_stack), 9, 50);
 	if (result == RT_EOK)
 	{
 		rt_kprintf("thread \"uart1_rx\"start.\n");
@@ -538,7 +620,7 @@ int main(void)
 							uart2_rx_entry,
 							RT_NULL,
                             (rt_uint8_t*)&uart2_rx_stack[0],
-                            sizeof(uart2_rx_stack), 9, 20);
+                            sizeof(uart2_rx_stack), 9, 50);
 	if (result == RT_EOK)
 	{
 		rt_kprintf("thread \"uart2_rx\"start.\n");
@@ -551,7 +633,7 @@ int main(void)
 							uart3_rx_entry,
 							RT_NULL,
                             (rt_uint8_t*)&uart3_rx_stack[0],
-                            sizeof(uart3_rx_stack), 9, 20);
+                            sizeof(uart3_rx_stack), 9, 50);
 	if (result == RT_EOK)
 	{
 		rt_kprintf("thread \"uart3_rx\"start.\n");
@@ -559,10 +641,8 @@ int main(void)
 	}
     
     /* set LED0 pin mode to output */
-    rt_pin_mode (PWSW_PIN, PIN_MODE_OUTPUT);
-    
-    rt_pin_write(PWSW_PIN, PIN_LOW);
     rt_pin_write(PWSW_PIN, PIN_HIGH);
+    rt_pin_mode (PWSW_PIN, PIN_MODE_OUTPUT);
     
     while (1)
     {

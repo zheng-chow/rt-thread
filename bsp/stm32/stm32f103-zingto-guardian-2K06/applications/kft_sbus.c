@@ -397,61 +397,61 @@ void sbus_resolving_entry(void* parameter)
                     }
                 }
                 break;
-            case 9: // done
-                if (pval[i] < SBUS_THRESHOLD_INVAILED)
-                    tmp_status = SBUS_INVAILD;
-                else if (pval[i] < SBUS_THRESHOLD_LOW)
-                    tmp_status = SBUS_LOW;
-                else if (pval[i] < SBUS_THRESHOLD_HIGH)
-                    tmp_status = SBUS_IDLE;
-                else
-                    tmp_status = SBUS_HIGH;
-                
-                if (env->ch_status[i] != tmp_status)
-                {
-                    env->ch_status[i] = tmp_status;
-                    
-                    if (env->ch_status[i] == SBUS_LOW)
-                    {
-                        if (env->cam_blankvideo == RT_FALSE)
-                        {
-                            cam_eval = CAMERA_CMD_PIP_MODE5;
-                            
-                            env->cam_blankvideo = RT_TRUE;
-                        }
-                        else
-                        {
-                            if (env->cam_pip_mode == 1)
-                                cam_eval = CAMERA_CMD_PIP_MODE1;
-                            else if (env->cam_pip_mode == 2)
-                                cam_eval = CAMERA_CMD_PIP_MODE2;
-                            else if (env->cam_pip_mode == 3)
-                                cam_eval = CAMERA_CMD_PIP_MODE3;
-                            else
-                                cam_eval = CAMERA_CMD_PIP_MODE4;
-                            
-                            env->cam_blankvideo = RT_FALSE;
-                        }
+//            case 9: // done
+//                if (pval[i] < SBUS_THRESHOLD_INVAILED)
+//                    tmp_status = SBUS_INVAILD;
+//                else if (pval[i] < SBUS_THRESHOLD_LOW)
+//                    tmp_status = SBUS_LOW;
+//                else if (pval[i] < SBUS_THRESHOLD_HIGH)
+//                    tmp_status = SBUS_IDLE;
+//                else
+//                    tmp_status = SBUS_HIGH;
+//                
+//                if (env->ch_status[i] != tmp_status)
+//                {
+//                    env->ch_status[i] = tmp_status;
+//                    
+//                    if (env->ch_status[i] == SBUS_LOW)
+//                    {
+//                        if (env->cam_blankvideo == RT_FALSE)
+//                        {
+//                            cam_eval = CAMERA_CMD_PIP_MODE5;
+//                            
+//                            env->cam_blankvideo = RT_TRUE;
+//                        }
+//                        else
+//                        {
+//                            if (env->cam_pip_mode == 1)
+//                                cam_eval = CAMERA_CMD_PIP_MODE1;
+//                            else if (env->cam_pip_mode == 2)
+//                                cam_eval = CAMERA_CMD_PIP_MODE2;
+//                            else if (env->cam_pip_mode == 3)
+//                                cam_eval = CAMERA_CMD_PIP_MODE3;
+//                            else
+//                                cam_eval = CAMERA_CMD_PIP_MODE4;
+//                            
+//                            env->cam_blankvideo = RT_FALSE;
+//                        }
 
-                        cam_request = RT_TRUE;
-                    }
-                    else if (env->ch_status[i] == SBUS_HIGH)
-                    {
-                        if (env->cam_tflogo == RT_FALSE)
-                        {
-                            cam_eval = CAMERA_CMD_TFLOGO_ON;
-                            env->cam_tflogo = RT_TRUE;
-                        }
-                        else
-                        {
-                            cam_eval = CAMERA_CMD_TFLOGO_OFF;
-                            env->cam_tflogo = RT_FALSE;
-                        }
-                        
-                        cam_request = RT_TRUE;
-                    }
-                }
-                break;
+//                        cam_request = RT_TRUE;
+//                    }
+//                    else if (env->ch_status[i] == SBUS_HIGH)
+//                    {
+//                        if (env->cam_tflogo == RT_FALSE)
+//                        {
+//                            cam_eval = CAMERA_CMD_TFLOGO_ON;
+//                            env->cam_tflogo = RT_TRUE;
+//                        }
+//                        else
+//                        {
+//                            cam_eval = CAMERA_CMD_TFLOGO_OFF;
+//                            env->cam_tflogo = RT_FALSE;
+//                        }
+//                        
+//                        cam_request = RT_TRUE;
+//                    }
+//                }
+//                break;
             default:
                 break;
             }

@@ -20,7 +20,7 @@
 #define DBG_COLOR
 #include <rtdbg.h>
 
-#define CAMERA_UARTPORT_NAME "uart5"
+#define CAMERA_UARTPORT_NAME "uart1"
 #define CAMERA_SEMAPHORE_NAME "shCAM"
 #define CAMERA_EVENT_NAME "evCAM"
 
@@ -212,6 +212,11 @@ void camera_resolving_entry(void* parameter)
         {
             LOG_E("event receive failed");
             continue;
+        }
+        
+        if (opcode & CAMERA_CMD_ZOOM_STOP) {
+            opcode &= ~CAMERA_CMD_ZOOM_IN;
+            opcode &= ~CAMERA_CMD_ZOOM_OUT;
         }
         
         switch(opcode & ~CAMERA_CMD_ZOOM_GETPOS) {
@@ -419,6 +424,7 @@ void camera_resolving_entry(void* parameter)
                     LOG_D("OK");
                 break;
             case 0:
+                break;
             default:
                 LOG_W("undefined opcode, %08X", opcode);
                 break;

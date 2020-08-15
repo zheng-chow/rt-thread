@@ -12,7 +12,7 @@
 #include <rtdevice.h>
 #include <board.h>
 
-#define RT_FOTA_SW_VERSION  "1.0.0"
+#define RT_FOTA_SW_VERSION  "1.0.1"
 
 #if defined(RT_USING_FINSH) && defined(FINSH_USING_MSH)
 #include <finsh.h>

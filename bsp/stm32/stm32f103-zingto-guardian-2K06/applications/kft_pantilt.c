@@ -427,9 +427,27 @@ void pantilt_resolving_entry(void* parameter)
             
             for (int i = 0; i < 4; i++)
             {
+                pktsz = sizeof(ptz_serialctrlpkt);
+                rt_memset(&ctrlpkt, 0x00, pktsz);
+                ctrlpkt.HEADER = PANTILT_PKT_HEADER;
+                
+                switch(i) {
+                    case 0:
+                    case 2:
+                    default:
+                        ctrlpkt.mode = 0x6400;
+                        break;
+                    case 1:
+                    case 3:
+                        ctrlpkt.mode = 0x9BFE;
+                        break;
+                }         
+                
+                pantilt_update_checksum(&ctrlpkt);
                 pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                rt_memcpy(pbuf, calib_protcol[i], PANTILT_CALIB_PKT_SIZE);
+                rt_memcpy(pbuf, &ctrlpkt, pktsz);
                 rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+                
                 rt_thread_delay(200);
             }
         }
@@ -472,6 +490,7 @@ void pantilt_resolving_entry(void* parameter)
             pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
             rt_memcpy(pbuf, &ctrlpkt, pktsz);
             rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+            
         }
         else {
             
@@ -515,13 +534,13 @@ void pantilt_resolving_entry(void* parameter)
                     env->trck_incharge = RT_FALSE;
                     env->trck_lost = RT_FALSE;
                     
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                    
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+//                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+//                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
+//                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+//                    
+//                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+//                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
+//                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
                 }
                 // todo.
             }
@@ -588,17 +607,17 @@ void pantilt_resolving_entry(void* parameter)
                     rt_memcpy(pbuf, &ctrlpkt, pktsz);
                     rt_mb_send(mailbox, (rt_ubase_t)pbuf);
                     
-                    if ((ctrlpkt.roll == 0) || (ctrlpkt.pitch == 0) || (ctrlpkt.yaw == 0)) // send again, ensure stop.
-                    {
-                        rt_thread_delay(10);
-                        pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                        rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                        rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
-                        rt_thread_delay(10);
-                        pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                        rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                        rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
-                    }
+//                    if ((ctrlpkt.roll == 0) || (ctrlpkt.pitch == 0) || (ctrlpkt.yaw == 0)) // send again, ensure stop.
+//                    {
+//                        rt_thread_delay(10);
+//                        pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+//                        rt_memcpy(pbuf, &ctrlpkt, pktsz);
+//                        rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
+//                        rt_thread_delay(10);
+//                        pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+//                        rt_memcpy(pbuf, &ctrlpkt, pktsz);
+//                        rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
+//                    }
                 }
             }
             else if (env->user_incharge)
@@ -615,6 +634,7 @@ void pantilt_resolving_entry(void* parameter)
                     ctrlpkt.HEADER = PANTILT_PKT_HEADER;
 
                     dval_roll = env->ch_value[0] - SBUS_VALUE_MEDIAN;    // roll
+                    
                     if (abs(dval_roll) < SBUS_VALUE_IGNORE)
                         dval_roll = 0;
                     else
@@ -663,17 +683,6 @@ void pantilt_resolving_entry(void* parameter)
                     rt_memcpy(pbuf, &ctrlpkt, pktsz);
                     rt_mb_send(mailbox, (rt_ubase_t)pbuf);
                     
-                    if ((ctrlpkt.roll == 0) && (ctrlpkt.pitch == 0) && (ctrlpkt.yaw && 0) && (env->ptz_action == PANTILT_ACTION_NULL)) // send again, ensure stop.
-                    {
-                        rt_thread_delay(10);
-                        pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                        rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                        rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
-                        rt_thread_delay(10);
-                        pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                        rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                        rt_mb_send(mailbox,  (rt_ubase_t)pbuf);                       
-                    }
                 }
             }
             

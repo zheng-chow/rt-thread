@@ -14,9 +14,11 @@
 
 #include "guardian.h"
 
+#include "general_pid.h"
+
 #define DBG_ENABLE
 #define DBG_SECTION_NAME "Track"
-#define DBG_LEVEL DBG_LOG
+#define DBG_LEVEL DBG_INFO
 #define DBG_COLOR
 #include <rtdbg.h>
 
@@ -113,19 +115,37 @@ static void track_data_recv_entry(void* parameter)
     rt_device_t dev = RT_NULL;
     static shb_serialctrlpkt ctrlpkt;
     rt_size_t pktsz;
-    rt_uint8_t lost_count = 0;
     rt_bool_t on_tracing = RT_FALSE;
+    rt_uint8_t lost_count = 0;
+    rt_uint8_t ctrl_count = 0;
+    
+    PID_t pid_x, pid_y;
     
     env = (struct guardian_environment*)parameter;
     RT_ASSERT(env != RT_NULL);
     
     pbuf = rt_malloc(TRACK_BUFFER_SIZE);
     RT_ASSERT(pbuf != RT_NULL);
-    
+
     dev = rt_device_find(TRACK_UARTPORT_NAME);
     RT_ASSERT(dev != RT_NULL);
     
+    pid_init(&pid_x, 1.0f, 0.02f, 0.5f);    // 1.4f
+    pid_init(&pid_y, 1.0f, 0.02f, 0.5f);
+    
+    pid_setThreshold(&pid_x, 500.0f, 200.0f, 0.02f);
+    pid_setThreshold(&pid_y, 500.0f, 200.0f, 0.02f);
+    
+    pid_setSetpoint(&pid_x, 0.0f);
+    pid_setSetpoint(&pid_y, 0.0f);
+    
+    pid_enable(&pid_x, RT_TRUE);
+    pid_enable(&pid_y, RT_TRUE);
+    
     LOG_I("recv sub-thread, start!");
+    
+    lost_count = 0;
+    ctrl_count = 0;
     
     while (1)
     {
@@ -158,21 +178,36 @@ static void track_data_recv_entry(void* parameter)
         {
             on_tracing = RT_TRUE;
             lost_count = 0;
+           
             
-            env->trck_err_x = *(rt_int16_t*)&pbuf[2];
-			env->trck_err_y = *(rt_int16_t*)&pbuf[4];
+            float deffer_x, deffer_y;
+            
+            deffer_x = -(float)*(rt_int16_t*)&pbuf[2];
+            deffer_y = -(float)*(rt_int16_t*)&pbuf[4];
+            
+            /* Enhance dynamic performance by PID control */
+            
+            env->trck_err_x = pid_update(&pid_x, deffer_x);
+            env->trck_err_y = pid_update(&pid_y, deffer_y);
             
             LOG_D("tracing %d %d", env->trck_err_x, env->trck_err_y);
             
-            rt_sem_release(env->sh_ptz);
+            if ( ctrl_count < 11)
+                ctrl_count++;
+            else {
+                rt_sem_release(env->sh_ptz);
+                ctrl_count = 0;
+            }
         }
         else
-        {
+        {       // cancel tracing.
             if (on_tracing == RT_FALSE)
                 continue;
             
-            if (lost_count++ < 10)
+            if (lost_count < 90) {      // lost > 90 then stop tracing.
+                lost_count++;
                 continue;
+            }
             
             on_tracing = RT_FALSE;
             
@@ -195,17 +230,15 @@ static void track_data_recv_entry(void* parameter)
                 ptr = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
                 rt_memcpy(ptr, &ctrlpkt, pktsz);
                 rt_mb_send(mailbox, (rt_ubase_t)ptr);
-                
-                /* stop PanTiltZoom */
-                env->trck_err_x = 0;
-                env->trck_err_y = 0;
-                rt_sem_release(env->sh_ptz);
-                
-                LOG_D("tracing target lost");
             }
-        }
             
-        // got a complete packet, decode now.
+            /* stop PanTiltZoom */
+            env->trck_err_x = 0;
+            env->trck_err_y = 0;
+            rt_sem_release(env->sh_ptz);
+
+            LOG_D("tracing target lost");
+        }
         
     }
 }
@@ -226,16 +259,16 @@ void track_resolving_entry(void* parameter)
     dev = rt_device_find(TRACK_UARTPORT_NAME);
     RT_ASSERT(dev != RT_NULL);
     
-    rt_device_open(dev, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX);
+    rt_device_open(dev, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_DMA_TX);
 
     semaph = rt_sem_create(TRACK_SEMAPHORE_RX_NAME, 0, RT_IPC_FLAG_FIFO);
     RT_ASSERT(semaph != RT_NULL);
     env->sh_track = rt_sem_create(TRACK_SEMAPHORE_NAME, 0, RT_IPC_FLAG_FIFO);
     RT_ASSERT(env->sh_track != RT_NULL);
     
-    mempool = rt_mp_create(TRACK_SEND_MP_NAME, 8, TRACK_BUFFER_SIZE);
+    mempool = rt_mp_create(TRACK_SEND_MP_NAME, 16, TRACK_BUFFER_SIZE);
     RT_ASSERT(mempool != RT_NULL);
-    mailbox = rt_mb_create(TRACK_SEND_MB_NAME, 8, RT_IPC_FLAG_FIFO);
+    mailbox = rt_mb_create(TRACK_SEND_MB_NAME, 16, RT_IPC_FLAG_FIFO);
     RT_ASSERT(mailbox != RT_NULL);
     
     // set uart3 in 115200, 8E1.
@@ -246,12 +279,12 @@ void track_resolving_entry(void* parameter)
     
     rt_device_set_rx_indicate(dev, uart_hook_callback);
     
-    pthread = rt_thread_create("tTRCKtx", track_data_send_entry, env, 2048, 9, 20);
+    pthread = rt_thread_create("tTRCKtx", track_data_send_entry, env, 2048, 7, 20);
     RT_ASSERT(pthread != RT_NULL);
     result = rt_thread_startup(pthread);
     RT_ASSERT(result == RT_EOK);
 
-    pthread = rt_thread_create("tTRCKrx", track_data_recv_entry, env, 2048, 9, 20);
+    pthread = rt_thread_create("tTRCKrx", track_data_recv_entry, env, 2048, 8, 20);
     RT_ASSERT(pthread != RT_NULL);
     result = rt_thread_startup(pthread);
     RT_ASSERT(result == RT_EOK);
@@ -271,12 +304,28 @@ void track_resolving_entry(void* parameter)
         ctrlpkt.HEADER = 0x7E7E;
         ctrlpkt.ADDR = 0x44;
         
-        if (env->trck_action == TRACK_ACTION_PREPARE)
+        if (env->trck_action == TRACK_ACTION_ZOOM_SHOW)
+        {
+			ctrlpkt.__reserved1 = 0x10;	
+			ctrlpkt.set_mode = 0x83;
+			ctrlpkt.set_fuction = 0x31;
+            
+            float  zoomf32 = 0.f;
+            if (env->cam_zoom_pos < 30)
+                zoomf32 = env->cam_zoom_pos + 1;                    // Optical ZOOM.
+            else             
+                zoomf32 = 30.0f * (env->cam_zoom_pos + 1 - 29);     // Optical ZOOM 30X combine Digital ZOOM.
+            
+			rt_memcpy(ctrlpkt.__reserved8 + 4, &zoomf32, 4);
+            rt_memcpy(&ctrlpkt.__reserved5, &env->ptz_yaw, sizeof(float));
+			rt_memcpy(ctrlpkt.__reserved8, &env->ptz_pitch, sizeof(float));           
+        }
+        else if (env->trck_action == TRACK_ACTION_PREPARE)
         {
             ctrlpkt.set_mode = 0x71;
             ctrlpkt.set_fuction = 0xFF;
             
-            LOG_D("TRACK_ACTION_PREPARE");
+            LOG_D("TRACK_ACTION_PREPAREHAL");
             
             env->trck_prepare = RT_TRUE;
         }
@@ -286,7 +335,7 @@ void track_resolving_entry(void* parameter)
 			ctrlpkt.set_fuction = 0xFE;
 			ctrlpkt.start_trace = 0x01;			// 0: OFF; 1: ON.
 			ctrlpkt.__reserved3 = 0x01;
-			ctrlpkt.set_trace_mode = 0x3C;		// medium size trace window.
+			ctrlpkt.set_trace_mode = 0x38;		// medium size trace window.    // 0x3C: S,M,L     0x38: M,L    0x2C: S,M
             
             LOG_D("TRACK_ACTION_TRACE_START");
             
@@ -300,7 +349,37 @@ void track_resolving_entry(void* parameter)
             LOG_D("TRACK_ACTION_TRACE_STOP");
             
             env->trck_prepare = RT_FALSE;
-            env->trck_incharge = RT_FALSE;
+            
+            if (env->trck_incharge == RT_TRUE) {
+                
+                // stop moving.
+                env->trck_lost = RT_TRUE;
+                
+                env->trck_err_x = 0;
+                env->trck_err_y = 0;
+                rt_sem_release(env->sh_ptz);
+            }
+        }
+        else if (env->trck_action == TRACK_ACTION_CAPTURE)
+        {
+            ctrlpkt.set_mode = 0x7C;
+            ctrlpkt.set_fuction = 0x02;
+            
+            LOG_D("TRACK_ACTION_CAPTURE");
+        }
+        else if (env->trck_action == TRACK_ACTION_RECORD_ON)
+        {
+            ctrlpkt.set_mode = 0x7C;
+            ctrlpkt.set_fuction = 0x01;
+            ctrlpkt.set_offset_x = 0x0258;
+            
+            LOG_D("TRACK_ACTION_RECORD_ON");
+        }
+        else if (env->trck_action == TRACK_ACTION_RECORD_OFF)
+        {
+            ctrlpkt.set_mode = 0x7C;
+            
+            LOG_D("TRACK_ACTION_RECORD_OFF");
         }
         else
             continue;

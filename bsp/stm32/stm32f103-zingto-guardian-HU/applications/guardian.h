@@ -54,6 +54,10 @@ void camera_resolving_entry(void* parameter);
 #define CAMERA_CMD_ZOOM_STOP        ( 0x00000200 )
 #define CAMERA_CMD_ZOOM_GETPOS      ( 0x00000400 )
 
+#define CAMERA_CMD_PIP_MODE5        ( 0x00000800 )
+#define CAMERA_CMD_TFLOGO_ON        ( 0x00001000 )
+#define CAMERA_CMD_TFLOGO_OFF       ( 0x00002000 )
+
 /* pantilt kernel function thread */
 void pantilt_resolving_entry(void* parameter);
 
@@ -61,12 +65,15 @@ void pantilt_resolving_entry(void* parameter);
 
 #define PANTILT_ACTION_NULL             (0x00)
 #define PANTILT_ACTION_HOMING           (0x01)
-#define PANTILT_ACTION_HEADDOWN         (0x02)
-#define PANTILT_ACTION_HEADLOCK         (0x03)
-#define PANTILT_ACTION_HEADFREE         (0x04)
 #define PANTILT_ACTION_IRCOLOR          (0x05)
 #define PANTILT_ACTION_IRZOOM           (0x06)
 #define PANTILT_ACTION_CALIBRATE        (0x07)
+#define PANTILT_ACTION_SHOWTEMP         (0x08)
+#define PANTILT_ACTION_SHOWANGLE        (0x09)
+
+#define PANTILT_MODE_HEADDOWN           (0x02)
+#define PANTILT_MODE_HEADLOCK           (0x03)
+#define PANTILT_MODE_HEADFREE           (0x04)
 
 /* track kernel function thread */
 void track_resolving_entry(void* parameter);
@@ -75,6 +82,10 @@ void track_resolving_entry(void* parameter);
 #define TRACK_ACTION_PREPARE            (0x01)
 #define TRACK_ACTION_TRACE_START        (0x03)
 #define TRACK_ACTION_TRACE_STOP         (0x04)
+#define TRACK_ACTION_ZOOM_SHOW          (0x05)
+#define TRACK_ACTION_CAPTURE            (0x06)
+#define TRACK_ACTION_RECORD_ON          (0x07)
+#define TRACK_ACTION_RECORD_OFF         (0x08)
 
 /* zingto kernel function thread */
 void zingto_resolving_entry(void* parameter);
@@ -94,6 +105,8 @@ struct guardian_environment
     rt_uint16_t     cam_zoom_pos;
     rt_tick_t       cam_getpos_tick;
     rt_uint8_t      cam_pip_mode;
+    rt_bool_t       cam_blankvideo;
+    rt_bool_t       cam_tflogo;
     rt_bool_t       cam_recording;
     rt_event_t      ev_camera;
     
@@ -101,7 +114,12 @@ struct guardian_environment
     rt_uint8_t      ptz_action;
     rt_uint8_t      irs_color;
     rt_uint8_t      irs_zoom;
+    rt_uint8_t      ptz_mode;
     rt_sem_t        sh_ptz;
+    
+    float           ptz_yaw;
+    float           ptz_pitch;
+    float           ptz_roll;
     
     // User
     rt_bool_t       user_incharge;

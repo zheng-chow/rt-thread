@@ -130,8 +130,8 @@ static void track_data_recv_entry(void* parameter)
     dev = rt_device_find(TRACK_UARTPORT_NAME);
     RT_ASSERT(dev != RT_NULL);
     
-    pid_init(&pid_x, 1.4f, 0.02f, 0.5f);
-    pid_init(&pid_y, 1.4f, 0.02f, 0.5f);
+    pid_init(&pid_x, 1.0f, 0.02f, 0.5f);    // 1.4f
+    pid_init(&pid_y, 1.0f, 0.02f, 0.5f);
     
     pid_setThreshold(&pid_x, 500.0f, 200.0f, 0.02f);
     pid_setThreshold(&pid_y, 500.0f, 200.0f, 0.02f);
@@ -349,7 +349,16 @@ void track_resolving_entry(void* parameter)
             LOG_D("TRACK_ACTION_TRACE_STOP");
             
             env->trck_prepare = RT_FALSE;
-            env->trck_incharge = RT_FALSE;
+            
+            if (env->trck_incharge == RT_TRUE) {
+                
+                // stop moving.
+                env->trck_lost = RT_TRUE;
+                
+                env->trck_err_x = 0;
+                env->trck_err_y = 0;
+                rt_sem_release(env->sh_ptz);
+            }
         }
         else if (env->trck_action == TRACK_ACTION_CAPTURE)
         {

@@ -24,7 +24,7 @@ const rt_uint8_t CAMERA_VISCA_RECORD_ON[] = {0x81, 0x01, 0x05, 0x01, 0x00, 0xFF}
 const rt_uint8_t CAMERA_VISCA_RECORD_OFF[] = {0x81, 0x01, 0x05, 0x01, 0x01, 0xFF};
 const rt_uint8_t CAMERA_VISCA_CAPTURE[] = {0x81, 0x01, 0x05, 0x00, 0x00, 0xFF};
 
-#define CAMERA_UARTPORT_NAME "uart5"
+#define CAMERA_UARTPORT_NAME "uart1"
 #define CAMERA_SEMAPHORE_NAME "shCAM"
 #define CAMERA_EVENT_NAME "evCAM"
 
@@ -39,11 +39,13 @@ const rt_uint8_t CAMERA_VISCA_CAPTURE[] = {0x81, 0x01, 0x05, 0x00, 0x00, 0xFF};
 rt_uint8_t VISCA_ZOOM_IN[]        = {0x81, 0x01, 0x04, 0x07, 0x20, 0xFF};
 rt_uint8_t VISCA_ZOOM_OUT[]       = {0x81, 0x01, 0x04, 0x07, 0x30, 0xFF};
 const rt_uint8_t VISCA_ZOOM_STOP[]      = {0x81, 0x01, 0x04, 0x07, 0x00, 0xFF};
+
 const rt_uint8_t VISCA_GET_ZOOMPOS[]    = {0x81, 0x09, 0x04, 0x47, 0xFF};
+
 const rt_uint8_t VISCA_SET_1080P50HZ[]  = {0x81, 0x01, 0x04, 0x24, 0x72, 0x01, 0x04, 0xFF, 0x90, 0x41, 0xFF, 0x90, 0x51, 0xFF};
 const rt_uint8_t VISCA_SET_1080P60HZ[]  = {0x81, 0x01, 0x04, 0x24, 0x72, 0x01, 0x05, 0xFF, 0x90, 0x41, 0xFF, 0x90, 0x51, 0xFF};
 
-const rt_uint8_t VISCA_ZOOM[30][VISCA_SET_ZOOMPOS_CMD_SIZE] = 
+const rt_uint8_t VISCA_ZOOM[41][VISCA_SET_ZOOMPOS_CMD_SIZE] = 
 {
 	{0x81, 0x01, 0x04, 0x47, 0x00, 0x00, 0x00, 0x00, 0xFF},	//1X
 	{0x81, 0x01, 0x04, 0x47, 0x01, 0x06, 0x0a, 0x01, 0xFF},	//2X
@@ -74,7 +76,18 @@ const rt_uint8_t VISCA_ZOOM[30][VISCA_SET_ZOOMPOS_CMD_SIZE] =
 	{0x81, 0x01, 0x04, 0x47, 0x03, 0x0f, 0x08, 0x0a, 0xFF},	//27X
 	{0x81, 0x01, 0x04, 0x47, 0x03, 0x0f, 0x0b, 0x06, 0xFF},	//28X
 	{0x81, 0x01, 0x04, 0x47, 0x03, 0x0f, 0x0d, 0x0c, 0xFF},	//29X
-	{0x81, 0x01, 0x04, 0x47, 0x04, 0x00, 0x00, 0x00, 0xFF},	//30X
+	{0x81, 0x01, 0x04, 0x47, 0x04, 0x00, 0x00, 0x00, 0xFF},	//30X * 1X
+    {0x81, 0x01, 0x04, 0x47, 0x06, 0x00, 0x00, 0x00, 0xFF}, //30X * 2X
+    {0x81, 0x01, 0x04, 0x47, 0x06, 0x0a, 0x08, 0x00, 0xFF}, //30X * 3X
+    {0x81, 0x01, 0x04, 0x47, 0x07, 0x00, 0x00, 0x00, 0xFF}, //30X * 4X
+    {0x81, 0x01, 0x04, 0x47, 0x07, 0x03, 0x00, 0x00, 0xFF}, //30X * 5X
+    {0x81, 0x01, 0x04, 0x47, 0x07, 0x05, 0x04, 0x00, 0xFF}, //30X * 6X
+    {0x81, 0x01, 0x04, 0x47, 0x07, 0x06, 0x0c, 0x00, 0xFF}, //30X * 7X
+    {0x81, 0x01, 0x04, 0x47, 0x07, 0x08, 0x00, 0x00, 0xFF}, //30X * 8X
+    {0x81, 0x01, 0x04, 0x47, 0x07, 0x08, 0x0c, 0x00, 0xFF}, //30X * 9X
+    {0x81, 0x01, 0x04, 0x47, 0x07, 0x09, 0x08, 0x00, 0xFF}, //30X * 10X
+    {0x81, 0x01, 0x04, 0x47, 0x07, 0x0a, 0x00, 0x00, 0xFF}, //30X * 11X
+    {0x81, 0x01, 0x04, 0x47, 0x07, 0x0a, 0x0c, 0x00, 0xFF}  //30X * 12X
 };
 
 #define HI3521D_CMD_CAPTURE     "CAPTURE:ON\n"
@@ -85,9 +98,15 @@ const rt_uint8_t VISCA_ZOOM[30][VISCA_SET_ZOOMPOS_CMD_SIZE] =
 #define HI3521D_CMD_PIP_MODE3   "SHOWCHANNEL:S3\n"
 #define HI3521D_CMD_PIP_MODE4   "SHOWCHANNEL:S4\n"
 
+#define HI3521D_CMD_PIP_MODE5   "SHOWCHANNEL:S5\n"
+
+#define HI3521D_CMD_TFLOGO_ON   "TF LOGO:ON\n"
+#define HI3521D_CMD_TFLOGO_OFF  "TF LOGO:OFF\n"
+
 #define HI3521D_ACK_CAPTURE     "CAPTURE:OK\n"
 #define HI3521D_ACK_RECORD      "RECORD:OK\n"
 #define HI3521D_ACK_PIP_MODE    "SHOWCHANNEL:OK\n"
+#define HI3521D_ACK_SET_LOGO    "SETLOGO:OK\n"
 
 /* defined the LED pin: PA0 */
 #define LED_PIN    GET_PIN(A, 0)
@@ -199,24 +218,24 @@ void camera_resolving_entry(void* parameter)
             continue;
         }
         
-        if (opcode & CAMERA_CMD_ZOOM_STOP)
-        {
-            opcode = CAMERA_CMD_ZOOM_STOP;
+        if (opcode & CAMERA_CMD_ZOOM_STOP) {
+            opcode &= ~CAMERA_CMD_ZOOM_IN;
+            opcode &= ~CAMERA_CMD_ZOOM_OUT;
         }
         
         switch(opcode & ~CAMERA_CMD_ZOOM_GETPOS) {
             // hi3521d ascii command
             case CAMERA_CMD_CAPTURE:
-                    uart_send_with_block(dev, (void *)CAMERA_VISCA_CAPTURE, sizeof(CAMERA_VISCA_CAPTURE));
-                    LOG_D("VISCA_CMD_CAPTURE");
+                uart_send_with_block(dev, (void *)CAMERA_VISCA_CAPTURE, sizeof(CAMERA_VISCA_CAPTURE));
+                LOG_D("VISCA_CMD_CAPTURE");
                 break;
             case CAMERA_CMD_RECORD_ON:
-                    uart_send_with_block(dev, (void *)CAMERA_VISCA_RECORD_ON, sizeof(CAMERA_VISCA_RECORD_ON));
-                    LOG_D("VISCA_CMD_CAPTURE");
+                uart_send_with_block(dev, (void *)CAMERA_VISCA_RECORD_ON, sizeof(CAMERA_VISCA_RECORD_ON));
+                LOG_D("VISCA_CMD_CAPTURE");
                 break;
             case CAMERA_CMD_RECORD_OFF:
-                    uart_send_with_block(dev, (void *)CAMERA_VISCA_RECORD_OFF, sizeof(CAMERA_VISCA_RECORD_OFF));
-                    LOG_D("VISCA_CMD_CAPTURE");
+                uart_send_with_block(dev, (void *)CAMERA_VISCA_RECORD_OFF, sizeof(CAMERA_VISCA_RECORD_OFF));
+                LOG_D("VISCA_CMD_CAPTURE");
                 break;
             case CAMERA_CMD_PIP_MODE1:
                 uart_clean_recv_buff(dev, pbuf);
@@ -282,7 +301,54 @@ void camera_resolving_entry(void* parameter)
                 else
                     LOG_D("OK");
                 break;
+            case CAMERA_CMD_PIP_MODE5:
+                uart_clean_recv_buff(dev, pbuf);
             
+                uart_send_with_block(dev, HI3521D_CMD_PIP_MODE5, sizeof(HI3521D_CMD_PIP_MODE5));
+                LOG_D("HI3521D_CMD_PIP5");
+            
+                rt_memset(pbuf, 0x00, CAMERA_BUFFER_SIZE);
+                result = uart_recv_with_timeout(dev, pbuf, sizeof(HI3521D_ACK_PIP_MODE));
+            
+                if (result != RT_EOK)
+                    LOG_W("timeout!");
+                else if (rt_strncmp(HI3521D_ACK_PIP_MODE, (void*)pbuf, sizeof(HI3521D_ACK_PIP_MODE) - 2))
+                    LOG_W("invailed!, %-16s", pbuf);
+                else
+                    LOG_D("OK");
+                break;
+            case CAMERA_CMD_TFLOGO_ON:
+                uart_clean_recv_buff(dev, pbuf);
+            
+                uart_send_with_block(dev, HI3521D_CMD_TFLOGO_ON, sizeof(HI3521D_CMD_TFLOGO_ON));
+                LOG_D("HI3521D_CMD_TFLOGO_ON");
+            
+                rt_memset(pbuf, 0x00, CAMERA_BUFFER_SIZE);
+                result = uart_recv_with_timeout(dev, pbuf, sizeof(HI3521D_ACK_SET_LOGO));
+            
+                if (result != RT_EOK)
+                    LOG_W("timeout!");
+                else if (rt_strncmp(HI3521D_ACK_SET_LOGO, (void*)pbuf, sizeof(HI3521D_ACK_SET_LOGO) - 2))
+                    LOG_W("invailed!, %-16s", pbuf);
+                else
+                    LOG_D("OK");
+                break;
+            case CAMERA_CMD_TFLOGO_OFF:
+                uart_clean_recv_buff(dev, pbuf);
+            
+                uart_send_with_block(dev, HI3521D_CMD_TFLOGO_OFF, sizeof(HI3521D_CMD_TFLOGO_OFF));
+                LOG_D("HI3521D_CMD_TFLOGO_OFF");
+            
+                rt_memset(pbuf, 0x00, CAMERA_BUFFER_SIZE);
+                result = uart_recv_with_timeout(dev, pbuf, sizeof(HI3521D_ACK_SET_LOGO));
+            
+                if (result != RT_EOK)
+                    LOG_W("timeout!");
+                else if (rt_strncmp(HI3521D_ACK_SET_LOGO, (void*)pbuf, sizeof(HI3521D_ACK_SET_LOGO) - 2))
+                    LOG_W("invailed!, %-16s", pbuf);
+                else
+                    LOG_D("OK");
+                break;
             // visca command
             case CAMERA_CMD_ZOOM_IN:
                 uart_clean_recv_buff(dev, pbuf);
@@ -357,14 +423,14 @@ void camera_resolving_entry(void* parameter)
                            ((pbuf[4] & 0x0F) << 4) | \
                            ((pbuf[5] & 0x0F) << 0);
 
-                for ( nZoom = 0; nZoom < 30; nZoom++)
+                for ( nZoom = 0; nZoom < 41; nZoom++)
                 {
                     int res = rt_memcmp(&VISCA_ZOOM[nZoom][4], &pbuf[2], 4);
                     if (0 == res)
                         break;
                     if (res > 0)
                     {
-                        if (nZoom == 29)
+                        if (nZoom == 40)
                             continue;
                         else
                         {
@@ -389,14 +455,19 @@ void camera_resolving_entry(void* parameter)
                     }
                 }
                 
-                if (nZoom == 30)
-                    nZoom = 0xFF;   // invailed zoom position.
+                if (nZoom == 41) 
+                {
+                    nZoom = 40;
+                }
                 
                 env->cam_zoom_pos = nZoom;
+                
+                env->trck_action = TRACK_ACTION_ZOOM_SHOW;
+                rt_sem_release(env->sh_track);
+
                 LOG_D("zoom, %d", nZoom);
                 
                 env->cam_getpos_tick = rt_tick_get();
-
             }
         }
         
