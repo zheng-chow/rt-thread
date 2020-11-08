@@ -4,32 +4,21 @@
 #include "app_control.h"
 #include "app_send.h"
 
+//#define DRV_DEBUG
+#define LOG_TAG      "app.control"
+#include <drv_log.h>
+
 #ifdef RT_USING_LWIP
 #include "lwip/init.h"
 
 #include "lwip/opt.h"
 #include "lwip/debug.h"
 #include "lwip/def.h"
-//#include "lwip/mem.h"
-//#include "lwip/pbuf.h"
 #include "lwip/sys.h"
-//#include "lwip/netif.h"
-//#include "lwip/stats.h"
-//#include "lwip/tcpip.h"
-//#include "lwip/dhcp.h"
 #include "lwip/netifapi.h"
 
 #include "netif/ethernetif.h"
 
-//#include "lwip/inet.h"
-/*
-#include <lwip/opt.h>
-#include <lwip/debug.h>
-#include <lwip/def.h>
-
-#include <lwip/sys.h>
-#include <lwip/api.h>
-#include <netif/ethernetif.h>*/
 #include <lwip/api.h>
 #include <lwip/sockets.h>
 #include <lwip/netdb.h>
@@ -42,7 +31,6 @@
 rt_thread_t tid_conn;
 rt_thread_t tid_disconn;
 rt_thread_t tid_recv;
-//rt_thread_t tid_send;
 rt_event_t  evt_disconn;
 rt_sem_t    sem_conn;
 rt_mutex_t  mt_receive;
@@ -51,11 +39,12 @@ rt_mutex_t  mt_send;
 int			nSockClient[MAX_CLIENT_SZ] = {-1, -1};
 
 static int ConfigSocket(int socket){
+    
 	const rt_uint32_t chOpt=1;   
-	const rt_uint32_t keepalive = SO_KEEPALIVE;        // 打开探测
-	const rt_uint32_t keepidle = 3;        // 开始探测前的空闲等待时间
-	const rt_uint32_t keepintvl = 1;        // 发送探测分节的时间间隔
-	const rt_uint32_t keepcnt = 3;        // 发送探测分节的次数
+	const rt_uint32_t keepalive = SO_KEEPALIVE;         // 打开探测
+	const rt_uint32_t keepidle = 3;                     // 开始探测前的空闲等待时间
+	const rt_uint32_t keepintvl = 1;                    // 发送探测分节的时间间隔
+	const rt_uint32_t keepcnt = 3;                      // 发送探测分节的次数
     const rt_uint32_t timeout = RT_TICK_PER_SECOND;
 #if LWIP_VERSION_MAJOR >= 2U
     struct timeval recv_timeout = { timeout / RT_TICK_PER_SECOND, timeout % RT_TICK_PER_SECOND };
@@ -212,6 +201,7 @@ ret:
 	}
 	return nSocket;	
 }*/
+
 static void accept_thread_entry(void* parameter){
     rt_uint16_t port = (rt_uint16_t) (rt_uint32_t)parameter;
     RT_ASSERT(RT_NULL != sem_conn);
@@ -354,6 +344,7 @@ static int get_readable_socket_index(void){
  	rt_mutex_release(mt_receive);
     return nRet;
 }
+
 static int receive_bytes(int nSock, char* cmdbuffer, int cmdbytes){
    	fd_set 					fdrd;
 	struct timeval 	        tim;
@@ -389,6 +380,7 @@ static int receive_bytes(int nSock, char* cmdbuffer, int cmdbytes){
 	rt_mutex_release(mt_receive);
 	return rBytes; 
 }
+
 static int send_bytes(int nSock, char* cmdbuffer, int cmdbytes)
 {	
 	fd_set 					fdwd;
@@ -418,7 +410,6 @@ static int send_bytes(int nSock, char* cmdbuffer, int cmdbytes)
 	rt_mutex_release(mt_send);
 	return sBytes;
 }
-
 
 #define CMD_HEADER "CCB+"
 #define CMD_TAILER "\r\n"
@@ -534,13 +525,11 @@ static int get_peer_ip(int sock, const char* rip){
     return -1;
 }
 
-#define FRAME_CMD_START "START"
-#define FRAME_CMD_STOP  "STOP"
-#define FRAME_CMD_REBOOT  "REBOOT"
-#define FRAME_RES_OK    "OK"
-#define FRAME_RES_FAILD "ERR"
-
-
+#define FRAME_CMD_START     "START"
+#define FRAME_CMD_STOP      "STOP"
+#define FRAME_CMD_REBOOT    "REBOOT"
+#define FRAME_RES_OK        "OK"
+#define FRAME_RES_FAILD     "ERR"
 
 #define APP_CONTROL_BUFFFER_SIZE 1024
 #define APP_CONTROL_BUFFFER_BASE rbuffer
@@ -650,36 +639,76 @@ static void receive_thread_entry(void * parameter){
         }*/
     }   
 }
-#if defined(RT_USING_INI_HELPER)
-#include "util_ini.h"
-#endif
-#define DEFAULT_SERVER_PORT 60606
-rt_uint16_t load_server_port(void){
-    rt_uint16_t port = DEFAULT_SERVER_PORT;
-#ifdef RT_USING_INI_HELPER
-    const char* filename = "control.ini";
-    int err, line;
-    struct ini_file* inifile = ini_read(filename,&err,&line);
-	if (inifile){
-        char *sport = (char*)ini_get(inifile,"NETOWRK", "Port", RT_NULL);
-        if (sport)   port = atoi(sport);      
+
+#include "cJSON.h"
+#include <dfs.h>
+#include <dfs_file.h>
+#include <dfs_posix.h>
+
+#define DEFAULT_SERVER_PORT         60606
+
+#define DEFAULT_UDP1_LOCALPORT0     60000
+#define DEFAULT_UDP1_LOCALPORT1     60004
+#define DEFAULT_UDP2_LOCALPORT0     60001
+#define DEFAULT_UDP2_LOCALPORT1     60005
+
+rt_uint16_t load_server_port(void)
+{
+    const char * FILENAME = "netif_config.json";
+    const rt_size_t JSON_BUFFER_SIZE = 1024;
+    rt_size_t size;
+    cJSON *root;
+    char *json;
+    int fd = RT_NULL;
+    
+    fd = open(FILENAME, O_RDONLY, 0);
+    if (fd < 0) {
+        LOG_W("read config failed! creating a default config");
+        
+        fd = open(FILENAME, O_WRONLY | O_CREAT, 0);
+        if (fd < 0) {
+            LOG_E("create config file failed!");
+            return 0;
+        }
+        root = cJSON_CreateObject();
+        
+        cJSON_AddItemToObject(root, "SERVER_PORT", cJSON_CreateNumber(DEFAULT_SERVER_PORT));
+        cJSON_AddItemToObject(root, "UDP1_LocalPort0", cJSON_CreateNumber(DEFAULT_UDP1_LOCALPORT0));
+        cJSON_AddItemToObject(root, "UDP1_LocalPort1", cJSON_CreateNumber(DEFAULT_UDP1_LOCALPORT1));
+        cJSON_AddItemToObject(root, "UDP2_LocalPort0", cJSON_CreateNumber(DEFAULT_UDP2_LOCALPORT0));
+        cJSON_AddItemToObject(root, "UDP2_LocalPort1", cJSON_CreateNumber(DEFAULT_UDP2_LOCALPORT1));
+        
+        json = cJSON_Print(root);
+        write(fd, json, rt_strlen(json));
+        rt_free(json);
+        close(fd);
     }
-    else{
-        char tport[7];
-        rt_snprintf(tport, 7, "%d", DEFAULT_SERVER_PORT);            
-        write_default_control_ini_file();
-        inifile = ini_read(filename,&err,&line);
-        if (!inifile)
-            inifile = ini_read(RT_NULL,&err,&line);
-        if (!inifile) return DEFAULT_SERVER_PORT;
-        while (1 != ini_put(inifile,"NETOWRK","Port",tport)) rt_thread_delay(1);
-        //while (1 != ini_put(inifile,"REMOTE","Address",destip)) rt_thread_delay(1);
-       ini_write(inifile, filename); 	 rt_thread_delay(1);
+    else {
+        json = rt_malloc(JSON_BUFFER_SIZE);
+        
+        if (json == RT_NULL) {
+            LOG_E("malloc buffer for json failed!");
+            return 0;
+        }
+        
+        size = read(fd, json, JSON_BUFFER_SIZE);
+        if (size == JSON_BUFFER_SIZE)
+            LOG_W("json buffer is full!");
+        
+        root = cJSON_Parse(json);
+        rt_free(json);
+        close(fd);
     }
-    ini_free(inifile);	
-#endif
+    
+    rt_uint16_t port = cJSON_GetObjectItem(root, "SERVER_PORT")->valueint;
+
+    LOG_I("server use %d to listening...", port);
+    
+    cJSON_Delete(root);
+    
     return port;
 }
+
 /*
 void update_remote_address(void){
 #ifdef RT_USING_INI_HELPER
@@ -709,11 +738,10 @@ void update_remote_address(void){
 #endif
 }*/
 
-
-
 void adc_control_server(void){
     rt_uint32_t port = load_server_port();
     //update_remote_address();
+    
  	tid_disconn = rt_thread_create("ndconn", disconnect_thread_entry, (void*)port, 4096,15,5);   
  	tid_conn = rt_thread_create("nconn", accept_thread_entry, (void*)port, 4096,15,5);   
     tid_recv = rt_thread_create("nrecv", receive_thread_entry, RT_NULL, 4096,16,5);
@@ -728,34 +756,4 @@ void adc_control_server(void){
  	rt_thread_startup(tid_conn);
 	rt_thread_startup(tid_recv);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif

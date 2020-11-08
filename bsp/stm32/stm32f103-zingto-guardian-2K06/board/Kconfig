@@ -1,4 +1,4 @@
-menu "Hardware Drivers Config"
+menu "BSP Customize Config"
 
 config SOC_STM32F103xE
     bool
@@ -6,6 +6,66 @@ config SOC_STM32F103xE
     select RT_USING_COMPONENTS_INIT
     select RT_USING_USER_MAIN
     default y
+
+menu "Product Customize Options"
+    choice 
+        prompt "SBUS Customize"
+        default CUSTOM_SBUS_DEFAULT
+
+        config CUSTOM_SBUS_DEFAULT
+            bool "Default Version"
+
+        config CUSTOM_SBUS_PUZHI
+            bool "2020 Version, PuZhi"
+
+        config CUSTOM_SBUS_PUZHI0911
+            bool "2020 Version, 0911 PuZhi"
+
+        config CUSTOM_SBUS_LIANGZW
+            bool "2020 Version, Liang Zhi Wei"
+
+        config CUSTOM_SBUS_VOLERS
+            bool "2020 Version, Volers Encoding Board"
+
+    endchoice
+
+    choice 
+        prompt "UART Customize"
+        default CUSTOM_UART_DEFAULT
+
+        config CUSTOM_UART_DEFAULT
+            bool "Default Version"
+
+        config CUSTOM_UART_PUZHI
+            bool "2020 Version, PuZhi"
+
+        config CUSTOM_UART_PUZHI0911
+            bool "2020 Version, 0911 PuZhi"
+
+        config CUSTOM_UART_LIANGZW
+            bool "2020 Version, Liang Zhi Wei"
+
+        config CUSTOM_UART_VOLERS
+            bool "2020 Version, Volers Encoding Board"
+
+    endchoice
+
+    choice 
+        prompt "CAM. Customize"
+        default CAMERA_MODEL_3521
+
+        config CAMERA_MODEL_3521
+            bool "Default Version, ZINGTO Hi3521D"
+
+        config CAMERA_MODEL_HU
+            bool "2020 Version, Low Cost, HU"
+
+        config CAMERA_MODEL_VOLERS
+            bool "2020 Version, Volers Encoding Board"
+
+    endchoice
+
+endmenu
 
 menu "On-chip Peripheral Drivers"
 

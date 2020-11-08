@@ -70,6 +70,8 @@ void pantilt_resolving_entry(void* parameter);
 #define PANTILT_ACTION_CALIBRATE        (0x07)
 #define PANTILT_ACTION_SHOWTEMP         (0x08)
 #define PANTILT_ACTION_SHOWANGLE        (0x09)
+#define PANTILT_ACTION_SET_HIGHGAIN     (0x0A)
+#define PANTILT_ACTION_SET_LOWGAIN      (0x0B)
 
 #define PANTILT_MODE_HEADDOWN           (0x02)
 #define PANTILT_MODE_HEADLOCK           (0x03)

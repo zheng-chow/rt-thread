@@ -7,32 +7,34 @@
 
 #define BASELINE_CNL            (6)
 
-struct adc_app_channel{    
-  //struct rt_mutex           mt_adc_channel;
-  struct{
-  volatile rt_uint32_t      channel_addr;
-  volatile rt_uint32_t      channel_size;
-  }cnl[2];
-  volatile rt_uint32_t      i_sel;
-  volatile rt_uint32_t      o_sel;  
-  //volatile rt_uint32_t      channel_addr;
-  //volatile rt_uint32_t      channel_size;
-  //volatile rt_uint32_t      channel_addr_2;
-  //volatile rt_uint32_t      channel_size_2;
-};
-struct adc_app_handler{
-  adc_callback_parameter_t  p;  
-  adc_callback_function_t*  func;
-  rt_device_t               dev_adc_channel;
-  rt_adc_device_t           dev_adc_baseline;
-  rt_thread_t               tid_adc_channel;
-  rt_thread_t               tid_adc_baseline;
-  struct rt_event           evt_adc_channel;
-  volatile float            baseline;
-  volatile rt_uint32_t      baseline_valid;
+struct adc_app_channel{ 
     
-  struct adc_app_channel    channel[2];
-   
+    //struct rt_mutex           mt_adc_channel;
+    struct{
+        volatile rt_uint32_t      channel_addr;
+        volatile rt_uint32_t      channel_size;
+    }cnl[2];
+  
+    volatile rt_uint32_t      i_sel;
+    volatile rt_uint32_t      o_sel;  
+    //volatile rt_uint32_t      channel_addr;
+    //volatile rt_uint32_t      channel_size;
+    //volatile rt_uint32_t      channel_addr_2;
+    //volatile rt_uint32_t      channel_size_2;
+};
+
+struct adc_app_handler{
+    adc_callback_parameter_t  p;  
+    adc_callback_function_t*  func;
+    rt_device_t               dev_adc_channel;
+    rt_adc_device_t           dev_adc_baseline;
+    rt_thread_t               tid_adc_channel;
+    rt_thread_t               tid_adc_baseline;
+    struct rt_event           evt_adc_channel;
+    volatile float            baseline;
+    volatile rt_uint32_t      baseline_valid;
+
+    struct adc_app_channel    channel[2]; 
 };
 
 struct adc_app_handler* __adc_handler = RT_NULL;
@@ -110,18 +112,21 @@ rt_bool_t app_adc_is_exist(void){
 }
 
 #include <math.h>
+
+#if 0
+
 #define M_PI		3.14159265358979323846
 #define M_PI_120    (M_PI*2/3)
-#define M_PI_60    (M_PI/3)
+#define M_PI_60     (M_PI/3)
 
 //强制精度小数点后2位
-#define SIG_REAL_FREQ    60.0
+#define SIG_REAL_FREQ   60.0
 #define SIG_SCALE       ((rt_uint64_t)100)
 #define SIG_FREQ        (((rt_uint64_t)(SIG_REAL_FREQ * SIG_SCALE))*1.0/SIG_SCALE)
-    
-#define SINCOS_POINTS  360000
-#define A_120  (SINCOS_POINTS/3)
-#define A_60  (SINCOS_POINTS/6)
+
+#define SINCOS_POINTS   360000
+#define A_120           (SINCOS_POINTS/3)
+#define A_60            (SINCOS_POINTS/6)
 
 #define FIT_BUFFER_SZ 80000
 
@@ -129,6 +134,7 @@ rt_bool_t app_adc_is_exist(void){
 
 #pragma location=0xC0400000
 rt_uint16_t cosbuffer[SINCOS_POINTS];
+
 //#pragma location=0xC0600000
 //float sinValue[SINCOS_POINTS];
 //#pragma location=0xC0600000
@@ -190,19 +196,13 @@ static rt_bool_t app_adc_fit(rt_uint8_t* adc_data, rt_uint32_t adc_data_len
             
         }
         X[3] = fit_mean(fitValue, groups);
-        
-        
-        
-        
-        
+ 
     }
-    
-    
-    
-    
+
     return bConvergence;
 }*/
-static void app_adc_fake(rt_uint8_t* adc_data, rt_uint32_t adc_data_len, rt_uint32_t index, adc_timestamp_t stamp){
+
+void app_adc_fake(rt_uint8_t* adc_data, rt_uint32_t adc_data_len, rt_uint32_t index, adc_timestamp_t stamp){
     rt_uint32_t groups = adc_data_len/6;
     rt_uint16_t* data16 = (rt_uint16_t*)adc_data;
     rt_uint64_t period = ((rt_uint64_t)(SIG_FREQ * SIG_SCALE)) * stamp.stamp; 
@@ -222,7 +222,6 @@ static void app_adc_fake(rt_uint8_t* adc_data, rt_uint32_t adc_data_len, rt_uint
             data16[2] = cosbuffer  [ua];
             fAngle += fDetAngle;
         }
- 
     }
     else{
         fAngle += A_60;
@@ -240,6 +239,8 @@ static void app_adc_fake(rt_uint8_t* adc_data, rt_uint32_t adc_data_len, rt_uint
         }     
     }   
 }
+#endif
+
 static void app_adc_channel_entry(void* parameter){
     struct adc_app_handler* handler = (struct adc_app_handler*)parameter;
     rt_err_t    err = RT_EOK;

@@ -51,11 +51,8 @@ static rt_err_t stm32_adc_enabled(struct rt_adc_device *device, rt_uint32_t chan
 
     if (enabled)
     {
-<<<<<<< Updated upstream
-#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined (SOC_SERIES_STM32MP1)
-=======
+
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined(SOC_SERIES_STM32H7)
->>>>>>> Stashed changes
         ADC_Enable(stm32_adc_handler);
 #else
         __HAL_ADC_ENABLE(stm32_adc_handler);
@@ -63,11 +60,9 @@ static rt_err_t stm32_adc_enabled(struct rt_adc_device *device, rt_uint32_t chan
     }
     else
     {
-<<<<<<< Updated upstream
-#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined (SOC_SERIES_STM32MP1)
-=======
+
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined(SOC_SERIES_STM32H7)
->>>>>>> Stashed changes
+
         ADC_Disable(stm32_adc_handler);
 #else
         __HAL_ADC_DISABLE(stm32_adc_handler);
@@ -188,20 +183,15 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
 #endif
         return -RT_ERROR;
     }
-<<<<<<< Updated upstream
-    
-#if defined(SOC_SERIES_STM32MP1)
-=======
+
 #if defined(SOC_SERIES_STM32H7)
->>>>>>> Stashed changes
+
     ADC_ChanConf.Rank = ADC_REGULAR_RANK_1;
 #else
     ADC_ChanConf.Rank = 1;
 #endif
-<<<<<<< Updated upstream
-    
-=======
->>>>>>> Stashed changes
+
+
 #if defined(SOC_SERIES_STM32F0)
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_71CYCLES_5;
 #elif defined(SOC_SERIES_STM32F1)
@@ -210,7 +200,6 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_112CYCLES;
 #elif defined(SOC_SERIES_STM32L4)
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_247CYCLES_5;
-<<<<<<< Updated upstream
 #elif defined(SOC_SERIES_STM32MP1)
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_810CYCLES_5;
 #endif
@@ -220,7 +209,7 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
 #endif
 
 #if defined(SOC_SERIES_STM32L4)
-=======
+
 #elif defined(SOC_SERIES_STM32H7)
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_387CYCLES_5;
 #endif
@@ -228,7 +217,6 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
     ADC_ChanConf.Offset = 0;
 #endif
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32H7)
->>>>>>> Stashed changes
     ADC_ChanConf.OffsetNumber = ADC_OFFSET_NONE;
     ADC_ChanConf.SingleDiff = LL_ADC_SINGLE_ENDED;
 #elif defined(SOC_SERIES_STM32MP1)

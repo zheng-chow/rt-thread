@@ -157,9 +157,15 @@
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32F1
 
-/* Hardware Drivers Config */
+/* BSP Customize Config */
 
 #define SOC_STM32F103xE
+
+/* Product Customize Options */
+
+#define CUSTOM_SBUS_LIANGZW
+#define CUSTOM_UART_LIANGZW
+#define CAMERA_MODEL_3521
 
 /* On-chip Peripheral Drivers */
 

@@ -308,7 +308,7 @@ void track_resolving_entry(void* parameter)
         {
 			ctrlpkt.__reserved1 = 0x10;	
 			ctrlpkt.set_mode = 0x83;
-			ctrlpkt.set_fuction = 0x31;
+			ctrlpkt.set_fuction = 0x30;     // not save parameter.
             
             float  zoomf32 = 0.f;
             if (env->cam_zoom_pos < 30)

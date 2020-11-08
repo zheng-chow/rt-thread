@@ -126,7 +126,6 @@ rt_inline int _can_int_rx(struct rt_can_device *can, struct rt_can_msg *data, in
 
     return (size - msgs);
 }
-
 rt_inline int _can_int_tx(struct rt_can_device *can, const struct rt_can_msg *data, int msgs)
 {
     int size;

@@ -4,13 +4,11 @@
 #include "app_send.h"
 #include "app_adc.h"
 
-
-
 #if defined(RT_USING_RUDP)
 #include <udp_api.h>
 udp_api_handle_t udp_api_hd[2] = {RT_NULL};
 #endif
-static void   adc_callback(adc_callback_parameter_t h, rt_uint8_t* adc_data, rt_uint32_t adc_data_len, rt_uint32_t index, adc_timestamp_t stamp){
+static void adc_callback(adc_callback_parameter_t h, rt_uint8_t* adc_data, rt_uint32_t adc_data_len, rt_uint32_t index, adc_timestamp_t stamp){
 #if defined(RT_USING_RUDP)
     udp_timestamp_t timeMask;
     timeMask.freq = stamp.freq;
@@ -79,95 +77,86 @@ static void   adc_callback(adc_callback_parameter_t h, rt_uint8_t* adc_data, rt_
    */
 #endif
 }
-rt_uint16_t ch_local_port[2][UDP_MAX_CLINET] = {{60000, 60004}
-                                                , {60001, 60005}};
-/*rt_uint16_t ch_remote_port[2][UDP_MAX_CLINET] = {{60001, 60005}
-                                                , {60002, 60006}};*/
-/*
-rt_uint16_t ch1_local_port[UDP_MAX_CLINET]  = {60000, 60004};
-rt_uint16_t ch1_remote_port[UDP_MAX_CLINET] = {60002, 60006};
-rt_uint16_t ch2_local_port[UDP_MAX_CLINET]  = {60001, 60005};
-rt_uint16_t ch2_remote_port[UDP_MAX_CLINET] = {60003, 60007};
-*/
+
+rt_uint16_t ch_local_port[2][UDP_MAX_CLINET] = {{60000, 60004}, {60001, 60005}};
+
 rt_uint16_t get_local_port(int udp, int idx){
-    if ((idx < UDP_MAX_CLINET) && (idx >= 0)
-     && ((0 == udp) || (1 == udp))   
-    )
+    if ((idx < UDP_MAX_CLINET) && 
+        (idx >= 0) && 
+        ((0 == udp) || (1 == udp)) )
         return ch_local_port[udp][idx];
+    
     return 0;
 }
-/*
-rt_bool_t set_remote_port(int udp, int idx, rt_uint16_t port){
-    if ((idx < UDP_MAX_CLINET) && (idx >= 0)
-     && ((0 == udp) || (1 == udp))   
-    ){
-        ch_remote_port[udp][idx] = port;
-        return RT_TRUE;
-    }
-    return RT_FALSE;;
-}*/
+
 int find_index(const char* dstIp, rt_uint16_t srcPort[2]){
     int idx = -1;
     for (int n = 0; n < UDP_MAX_CLINET; n++){
-        if ((ch_local_port[0][n] == srcPort[0])
-        && (ch_local_port[1][n] == srcPort[1])){
+        if ((ch_local_port[0][n] == srcPort[0]) && 
+            (ch_local_port[1][n] == srcPort[1])) {
             idx = n;
             break;
         }
     }
+    
     if (idx >= 0){
-        if (udp_api_check_ip(udp_api_hd[0], idx, dstIp) && udp_api_check_ip(udp_api_hd[1], idx, dstIp)){
+        if (udp_api_check_ip(udp_api_hd[0], idx, dstIp) && 
+            udp_api_check_ip(udp_api_hd[1], idx, dstIp)){
             return idx;
         }
     }
     return -1;
 }
 
+
+
 #if defined(RT_USING_INI_HELPER)
 #include "util_ini.h"
 #endif
+
 #ifdef RT_USING_INI_HELPER
-void write_default_control_ini_file(void){
-    const char* filename = "control.ini";
+void write_default_control_ini_file(void)
+{
+    const char* FILENAME = "control.ini";
     char buffer[20];
     char tport[7];
     int err, line;
-    struct ini_file*         inifile = RT_NULL;
-    inifile = ini_read(filename,&err,&line);
-    if (!inifile)
-        inifile = ini_read(RT_NULL,&err,&line);   
-    if (inifile){
+    struct ini_file* fp = RT_NULL;
+    
+    fp = ini_read(FILENAME, &err, &line);
+    
+    if (!fp)
+        fp = ini_read(RT_NULL,&err,&line);
+    
+    if (fp){
+        
         char* value = RT_NULL;
+        
         for (int n = 0; n < UDP_MAX_CLINET; n++){
+            
             rt_snprintf(buffer, 20, "LocalPort%d", n);
-            value = (char*)ini_get(inifile,"UDP1", buffer, RT_NULL);
+            value = (char*)ini_get(fp, "UDP1", buffer, RT_NULL);
+
             if (!value){
                 rt_snprintf(tport, 7, "%d", ch_local_port[0][n]);
-                ini_put(inifile,"UDP1", buffer,tport);
+                ini_put(fp,"UDP1", buffer,tport);
             }
-            value = (char*)ini_get(inifile,"UDP2", buffer, RT_NULL);
+
+            value = (char*)ini_get(fp, "UDP2", buffer, RT_NULL);
+
             if (!value){
                 rt_snprintf(tport, 7, "%d", ch_local_port[1][n]);
-                ini_put(inifile,"UDP2", buffer,tport);
+                ini_put(fp, "UDP2", buffer,tport);
             }        
-            /*
-            rt_snprintf(buffer, 20, "RemotePort%d", n);
-            value = (char*)ini_get(inifile,"UDP1", buffer, RT_NULL);
-            if (!value){
-                rt_snprintf(tport, 7, "%d", ch_remote_port[0][n]);
-                ini_put(inifile,"UDP1", buffer,tport);
-            }    
-            value = (char*)ini_get(inifile,"UDP2", buffer, RT_NULL);
-            if (!value){
-                rt_snprintf(tport, 7, "%d", ch_remote_port[1][n]);
-                ini_put(inifile,"UDP2", buffer,tport);
-            } */           
-        } 
-        ini_write(inifile, filename);	
-        rt_thread_delay(RT_TICK_PER_SECOND/100);       
-        ini_free(inifile);	  
+        }
+        ini_write(fp, FILENAME);
+        
+        rt_thread_delay(RT_TICK_PER_SECOND / 100);
+        ini_free(fp);
     }
 }
+
+
 void read_udp_port(void){
     const char* filename = "control.ini";
     char buffer[20];
@@ -207,7 +196,8 @@ int app_check_send(const char* dstIp, rt_uint16_t dstPort[2]){
     if (idx0 != idx1) return -1;
     return idx0;
 }
-int app_create_send(const char* dstIp, rt_uint16_t dstPort[2]){
+
+int app_create_send(const char* dstIp, rt_uint16_t dstPort[2]) {
 #if defined(RT_USING_RUDP)
     if ((!udp_api_hd[0] && udp_api_hd[1]) || (udp_api_hd[0] && !udp_api_hd[1])) return -1;
     int idx = -1;
@@ -251,17 +241,6 @@ int app_create_send(const char* dstIp, rt_uint16_t dstPort[2]){
         }
     }
 
-    /*
-    if (!udp_api_hd[0])
-        udp_api_hd[0] = udp_api_create(ch_local_port[0][0], dstIp, dstPort, "udp0");
-    else {
-        idx = udp_api_add_client(&udp_api_hd[0], ch_local_port[0][0], dstIp, dstPort);
-    }
-    if (!udp_api_hd[1])
-        udp_api_hd[1] = udp_api_create(ch_local_port[1][0], dstIp, dstPort, "udp1");
-    else{
-        idx = udp_api_add_client(&udp_api_hd[1], ch_local_port[1][0], dstIp, dstPort);
-    }*/
 #endif   
     //确保adc只被启动一次
     if (app_adc_is_exist()) return idx;
@@ -271,11 +250,15 @@ int app_create_send(const char* dstIp, rt_uint16_t dstPort[2]){
         udp_api_delete(&udp_api_hd[1]);    
         return -1;
     }
+    
     set_adc_callback_function(RT_NULL, adc_callback);
+    
     if (!app_start_adc())
         return -1;
+    
     return idx;
 }
+
 rt_bool_t app_delete_send(const char* dstIp, rt_uint16_t srcPort[2]){
     int idx = find_index(dstIp, srcPort);       
     if ((idx < 0) || (idx >= UDP_MAX_CLINET)) return RT_FALSE;

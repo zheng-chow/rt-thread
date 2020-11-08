@@ -9,11 +9,7 @@ void write_default_control_ini_file(void);
 rt_uint16_t get_local_port(int udp, int idx);
 rt_bool_t set_remote_port(int udp, int idx, rt_uint16_t port);
 
-
 int find_index(const char* dstIp, rt_uint16_t srcPort[2]);
-
-
-
 
 #endif
 

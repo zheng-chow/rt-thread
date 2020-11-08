@@ -39,7 +39,7 @@
 
 #define RT_USING_DEVICE
 #define RT_USING_CONSOLE
-#define RT_CONSOLEBUF_SIZE 512
+#define RT_CONSOLEBUF_SIZE 1024
 #define RT_CONSOLE_DEVICE_NAME "uart1"
 #define RT_VER_NUM 0x40003
 #define ARCH_ARM
@@ -153,8 +153,8 @@
 
 /* Static IPv4 Address */
 
-#define RT_LWIP_IPADDR "192.168.3.77"
-#define RT_LWIP_GWADDR "192.168.3.1"
+#define RT_LWIP_IPADDR "192.168.5.222"
+#define RT_LWIP_GWADDR "192.168.5.1"
 #define RT_LWIP_MSKADDR "255.255.255.0"
 #define RT_LWIP_UDP
 #define RT_LWIP_TCP
@@ -180,6 +180,7 @@
 #define LWIP_SO_RCVTIMEO 1
 #define LWIP_SO_SNDTIMEO 1
 #define LWIP_SO_RCVBUF 1
+#define LWIP_SO_LINGER 0
 #define LWIP_NETIF_LOOPBACK 0
 #define RT_LWIP_USING_PING
 
@@ -191,17 +192,29 @@
 
 /* Utilities */
 
+#define RT_USING_ULOG
+#define ULOG_OUTPUT_LVL_D
+#define ULOG_OUTPUT_LVL 7
+#define ULOG_USING_ISR_LOG
+#define ULOG_ASSERT_ENABLE
+#define ULOG_LINE_BUF_SIZE 1024
+
+/* log format */
+
+#define ULOG_USING_COLOR
+#define ULOG_OUTPUT_TIME
+#define ULOG_OUTPUT_LEVEL
+#define ULOG_OUTPUT_TAG
+#define ULOG_BACKEND_USING_CONSOLE
 
 /* RT-Thread online packages */
 
 /* IoT - internet of things */
 
-#define PKG_USING_PAHOMQTT
-#define PAHOMQTT_PIPE_MODE
-#define RT_PKG_MQTT_THREAD_STACK_SIZE 4096
-#define PKG_PAHOMQTT_SUBSCRIBE_HANDLERS 1
 #define MQTT_DEBUG
-#define PKG_USING_PAHOMQTT_V110
+#define PKG_USING_MYMQTT
+#define PKG_USING_MYMQTT_LATEST_VERSION
+#define MQTT_MAX_MESSAGE_HANDLERS 1
 #define PKG_USING_CJSON
 #define PKG_USING_CJSON_V102
 
@@ -213,9 +226,6 @@
 /* Wiced WiFi */
 
 #define PKG_USING_NETUTILS
-#define PKG_NETUTILS_TFTP
-#define NETUTILS_TFTP_PORT 69
-#define PKG_NETUTILS_TELNET
 #define PKG_USING_NETUTILS_V110
 
 /* IoT Cloud */
@@ -238,7 +248,6 @@
 
 /* peripheral libraries and drivers */
 
-#define BSP_USING_SPI1
 
 /* miscellaneous packages */
 
@@ -283,12 +292,12 @@
 #define BSP_USING_UART
 #define BSP_USING_UART1
 #define BSP_USING_SPI
+#define BSP_USING_SPI1
 #define BSP_USING_ADC3
 #define BSP_ADC_USING_DMA
 
 /* Board extended module Drivers */
 
 #define RT_USING_RUDP
-#define RT_USING_INI_HELPER
 
 #endif

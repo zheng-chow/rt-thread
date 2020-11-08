@@ -1,11 +1,10 @@
 #include <udp_ethernet.h>
 
+#include <lwip/sockets.h>
 #include <lwip/sys.h>
 #include <lwip/api.h>
 #include <netif/ethernetif.h>
-#include <lwip/sockets.h>
 #include <lwip/netdb.h>
-
 
 #pragma pack(1)
 typedef struct {
@@ -20,6 +19,7 @@ typedef struct {
 	uint32_t total;
 	uint32_t position;
 }eth_udp_hdr_t;
+
 typedef struct {
 	udp_list_t						list;
     uint64_t						tick;
@@ -82,6 +82,7 @@ static int32_t eth_no_sub(uint32_t a, uint32_t b){
 	return res;
 }
 #endif
+
 void eth_api_free_list(udp_list_t* header){
 	if (!header) return;
 	if (udp_list_isempty(header)) return;
@@ -587,10 +588,3 @@ void udp_s_loop(udp_eth_api_handler_t phandler){
     handler->s_thread_idle = RT_TRUE;
     while(!handler->s_thread_enable) rt_thread_delay(RT_TICK_PER_SECOND/50);
 }
-
-
-
-
-
-
-

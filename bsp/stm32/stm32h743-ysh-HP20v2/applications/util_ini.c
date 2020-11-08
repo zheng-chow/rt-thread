@@ -534,13 +534,13 @@ struct ini_file *ini_parse(const char *text, int *err, int *line) {
 static void string_to_file(int fd/* FILE *f*/, const char *s) {
 	int len = 0;
 	if (!s) return;
-	if (-1 == fd) return;
+	if ( -1 == fd) return;
 	
 	len = rt_strlen (s);
-	if (len >0)
+	if (len > 0)
 	{
-		write(fd,s,len);
-	}
+		write(fd, s, len);
+	} 
 //    fputc('\"', f);
 //    for(; s[0]; s++) {
 //        switch(s[0]) {
@@ -625,16 +625,20 @@ static void write_section(ini_section *s, int fd/* FILE *f*/) {
  */
 int ini_write(struct ini_file *ini, const char *fname) {
 	int fd = -1;
-  if(fname) {
+    
+    if(fname) {
 		fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC ,0);
     if(fd < 0)
 			return ER_FOPEN;
 	}
 	else
 		return ER_FOPEN;
+    
 	write_pair(ini->globals, fd);
 	write_section(ini->sections, fd);
-	close(fd);	
+    
+	close(fd);
+    
 	/*
 	
     FILE *f;

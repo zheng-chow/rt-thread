@@ -12,6 +12,7 @@ platform_compatible.c
 udp_api.c
 udp_ethernet.c
 util_ini.c
+mqtt_jc.c
 """)
 
 group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH)

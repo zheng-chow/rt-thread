@@ -64,7 +64,7 @@ void SystemClock_Config(void);
 
 #define BLINK_PIN   LED0_PIN
 #define CONV_PIN    LED1_PIN
-#define FAULT_PIN   LED2_PIN
+#define MQTT_PIN    LED2_PIN
 #define WARN_PIN    LED3_PIN
 
 //wickkid++ end

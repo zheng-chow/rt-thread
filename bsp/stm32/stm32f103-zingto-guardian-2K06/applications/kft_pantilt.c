@@ -54,17 +54,20 @@ const float IR2RATIO = 0.5f;
 rt_uint8_t irs_set_ROI[IRSENSOR_SET_ROI_PKT_SIZE]  = {0xAA, 0x0C, 0x01, 0x2B, 0x01, 
                                                       0xA0, 0x00, 0x80, 0x00,           // left up. 160, 128
                                                       0xE0, 0x01, 0x80, 0x01,           // right down. 640, 512
-                                                      0x8C, 0xEB, 0xAA};                      
+                                                      0x8C, 0xEB, 0xAA};
 
-#define IRSENSOR_SHOW_HT_PKT_SIZE (9)
-rt_uint8_t irs_set_alltemp[IRSENSOR_SHOW_HT_PKT_SIZE] = {0xAA, 0x05, 0x07, 0x24, 0x01, 0x01, 0xDC, 0xEB, 0xAA};
-rt_uint8_t irs_show_hightemp[IRSENSOR_SHOW_HT_PKT_SIZE] = {0xAA, 0x05, 0x07, 0x26, 0x01, 0x01, 0xDE, 0xEB, 0xAA};
-rt_uint8_t irs_show_lowtemp[IRSENSOR_SHOW_HT_PKT_SIZE] = {0xAA, 0x05, 0x07, 0x28, 0x01, 0x01, 0xE0, 0xEB, 0xAA};
+#define IRCAM_PKT_SIZE_9B   (9)
+rt_uint8_t irs_set_alltemp[IRCAM_PKT_SIZE_9B] = {0xAA, 0x05, 0x07, 0x24, 0x01, 0x01, 0xDC, 0xEB, 0xAA};
+rt_uint8_t irs_show_hightemp[IRCAM_PKT_SIZE_9B] = {0xAA, 0x05, 0x07, 0x26, 0x01, 0x01, 0xDE, 0xEB, 0xAA};
+rt_uint8_t irs_show_lowtemp[IRCAM_PKT_SIZE_9B] = {0xAA, 0x05, 0x07, 0x28, 0x01, 0x01, 0xE0, 0xEB, 0xAA};
+
+rt_uint8_t irs_set_high_gain[IRCAM_PKT_SIZE_9B] = {0xAA, 0x05, 0x07, 0x01, 0x01, 0x00, 0xB8, 0xEB, 0xAA};
+rt_uint8_t irs_set_low_gain[IRCAM_PKT_SIZE_9B] = {0xAA, 0x05, 0x07, 0x01, 0x01, 0x01, 0xB9, 0xEB, 0xAA};
 
 #define IRSENSOR_SAVE_PKT_SIZE  (8)
 rt_uint8_t irs_save[IRSENSOR_SAVE_PKT_SIZE] = {0xAA, 0x04, 0x01, 0x7F, 0x02, 0x30, 0xEB, 0xAA};
 
-#define IRSENSOR_COLOR_PKT_SIZE (9)                    
+#define IRSENSOR_COLOR_PKT_SIZE (9)
 
 rt_uint8_t irs_serialctrlpkt[IRSENSOR_COLOR_PKT_SIZE] = {0xAA, 0x05, 0x01, 0x42, 0x02, 0x00, 0xF4, 0xEB, 0xAA};
 
@@ -250,7 +253,7 @@ static void pantilt_data_recv_entry(void* parameter)
         //rt_kprintf("%02X %02X %02X %02X\n", pbuf[0], pbuf[1], pbuf[2], pbuf[3]);
         szbuf = 0;
 
-        // 67 yaw 69 pitch 71 yaw
+        // 67 roll 69 pitch 71 yaw
         rt_int16_t  temp = 0;
         temp = *(rt_int16_t*)&pbuf[71];
 		float yaw = temp * 0.02197265625f;
@@ -332,6 +335,22 @@ void pantilt_resolving_entry(void* parameter)
             pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
             rt_memcpy(pbuf, ptz_askctrlpkt, PTZ_ASK_PKT_SIZE);
             rt_mb_send(mailbox, (rt_ubase_t)pbuf);           
+        }
+        else if (env->ptz_action == PANTILT_ACTION_SET_HIGHGAIN)
+        {
+            env->ptz_action = PANTILT_ACTION_NULL;
+            
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, irs_set_high_gain, IRCAM_PKT_SIZE_9B);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+        }
+        else if (env->ptz_action == PANTILT_ACTION_SET_LOWGAIN)
+        {
+            env->ptz_action = PANTILT_ACTION_NULL;
+            
+            pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+            rt_memcpy(pbuf, irs_set_low_gain, IRCAM_PKT_SIZE_9B);
+            rt_mb_send(mailbox, (rt_ubase_t)pbuf);
         }
         else if (env->ptz_action == PANTILT_ACTION_IRZOOM)
         {
@@ -463,7 +482,7 @@ void pantilt_resolving_entry(void* parameter)
             if (env->ptz_mode == PANTILT_MODE_HEADFREE)
                 ctrlpkt.mode = 0x0000;
             else if (env->ptz_mode == PANTILT_MODE_HEADLOCK)
-                ctrlpkt.mode = 0x6400;               
+                ctrlpkt.mode = 0x6400;
             else if (env->ptz_mode == PANTILT_MODE_HEADDOWN)
                 ctrlpkt.mode = 0x9BFE;
             
@@ -533,14 +552,6 @@ void pantilt_resolving_entry(void* parameter)
                 {
                     env->trck_incharge = RT_FALSE;
                     env->trck_lost = RT_FALSE;
-                    
-//                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-//                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-//                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-//                    
-//                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-//                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-//                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
                 }
                 // todo.
             }
@@ -569,13 +580,16 @@ void pantilt_resolving_entry(void* parameter)
                             dval_roll = PANTILT_VALUE_MAXIMUM;
                     }
                     
-                    dval_pitch = env->ch_value[1] - SBUS_VALUE_MEDIAN;    // pitch
+                    dval_pitch = env->ch_value[10] - SBUS_VALUE_MEDIAN;    // pitch
                     if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
                         dval_pitch = 0;
                    
-                    dval_yaw = env->ch_value[3] - SBUS_VALUE_MEDIAN;    // yaw
+                    dval_yaw = env->ch_value[11] - SBUS_VALUE_MEDIAN;    // yaw
                     if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
                         dval_yaw = 0;
+                    
+                    // disable roll and yaw.
+                    dval_roll = 0;
                     
                     switch(env->cam_pip_mode)
                     {
@@ -607,17 +621,6 @@ void pantilt_resolving_entry(void* parameter)
                     rt_memcpy(pbuf, &ctrlpkt, pktsz);
                     rt_mb_send(mailbox, (rt_ubase_t)pbuf);
                     
-//                    if ((ctrlpkt.roll == 0) || (ctrlpkt.pitch == 0) || (ctrlpkt.yaw == 0)) // send again, ensure stop.
-//                    {
-//                        rt_thread_delay(10);
-//                        pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-//                        rt_memcpy(pbuf, &ctrlpkt, pktsz);
-//                        rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
-//                        rt_thread_delay(10);
-//                        pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-//                        rt_memcpy(pbuf, &ctrlpkt, pktsz);
-//                        rt_mb_send(mailbox,  (rt_ubase_t)pbuf);
-//                    }
                 }
             }
             else if (env->user_incharge)
@@ -645,13 +648,16 @@ void pantilt_resolving_entry(void* parameter)
                             dval_roll = PANTILT_VALUE_MAXIMUM;
                     }
                     
-                    dval_pitch = env->ch_value[1] - SBUS_VALUE_MEDIAN;    // pitch
+                    dval_pitch = env->ch_value[10] - SBUS_VALUE_MEDIAN;    // pitch
                     if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
                         dval_pitch = 0;
                    
-                    dval_yaw = env->ch_value[3] - SBUS_VALUE_MEDIAN;    // yaw
+                    dval_yaw = env->ch_value[11] - SBUS_VALUE_MEDIAN;    // yaw
                     if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
                         dval_yaw = 0;
+                    
+                    // disable roll and yaw.
+                    dval_roll = 0;
                     
                     switch(env->cam_pip_mode)
                     {
