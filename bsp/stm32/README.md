@@ -10,6 +10,7 @@ STM32 系列 BSP 目前支持情况如下表所示：
 | **F1 系列** |  |
 | [stm32f103-atk-nano](stm32f103-atk-nano)        | 正点原子 F103 NANO 开发板  |
 | [stm32f103-atk-warshipv3](stm32f103-atk-warshipv3)  | 正点原子 F103 战舰V3 开发板  |
+| [stm32f103-blue-pill](stm32f103-blue-pill) | STM32F103C8T6蓝色最小系统板 |
 | [stm32f103-dofly-lyc8](stm32f103-dofly-lyc8) | 德飞莱 STM32F103 开发板 |
 | [stm32f103-dofly-M3S](stm32f103-dofly-M3S) | 德飞莱 STM32F103 开发板 |
 | [stm32f103-fire-arbitrary](stm32f103-fire-arbitrary/)  | 野火 F103 霸道开发板     |
@@ -55,7 +56,10 @@ STM32 系列 BSP 目前支持情况如下表所示：
 | [stm32l476-st-nucleo](stm32l476-st-nucleo) | ST 官方 STM32L476-nucleo 开发板 |
 | [stm32l496-ali-developer](stm32l496-ali-developer) | 诺行 STM32L496 Ali Developer Kit 开发板 |
 | **MP1 系列** |  |
-| [stm32mp157a-st-discovery](stm32mp157a-st-discovery) | ST 官方 STM32MP157A-ST-Discovery Kit 开发板 |
+| [stm32mp157a-st-discovery](stm32mp157a-st-discovery) | ST 官方 STM32MP157A-DK1 开发板 |
+| [stm32mp157a-st-ev1](stm32mp157a-st-ev1) | ST 官方 STM32MP157A-EV1 开发板 |
+| **WB 系列** |  |
+| [stm32wb55-st-nucleo](stm32wb55-st-nucleo) | ST 官方 STM32WB55-nucleo 开发板 |
 
 可以通过阅读相应 BSP 下的 README 来快速上手，如果想要使用 BSP 更多功能可参考 docs 文件夹下提供的说明文档，如下表所示：
 

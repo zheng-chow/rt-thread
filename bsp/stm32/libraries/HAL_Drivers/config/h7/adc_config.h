@@ -19,6 +19,7 @@ extern "C" {
 
 #ifdef BSP_USING_ADC1
 #ifndef ADC1_CONFIG
+<<<<<<< HEAD
 #define ADC1_CONFIG                                                 \
     {                                                               \
        .Instance                   = ADC1,                          \
@@ -34,12 +35,32 @@ extern "C" {
        .Init.ExternalTrigConv      = ADC_EXTERNALTRIG_T3_TRGO,            \
        .Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_RISING, \
        /*.Init.DMAContinuousRequests = DISABLE,  */                     \
+=======
+#define ADC1_CONFIG                                                     \
+    {                                                                   \
+        .Instance                      = ADC1,                          \
+        .Init.ClockPrescaler           = ADC_CLOCK_SYNC_PCLK_DIV4,      \
+        .Init.Resolution               = ADC_RESOLUTION_16B,            \
+        .Init.ScanConvMode             = ADC_SCAN_DISABLE,              \
+        .Init.EOCSelection             = ADC_EOC_SINGLE_CONV,           \
+        .Init.LowPowerAutoWait         = DISABLE,                       \
+        .Init.ContinuousConvMode       = DISABLE,                       \
+        .Init.NbrOfConversion          = 1,                             \
+        .Init.DiscontinuousConvMode    = DISABLE,                       \
+        .Init.NbrOfDiscConversion      = 1,                             \
+        .Init.ExternalTrigConv         = ADC_SOFTWARE_START,            \
+        .Init.ExternalTrigConvEdge     = ADC_EXTERNALTRIGCONVEDGE_NONE, \
+        .Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR,         \
+        .Init.Overrun                  = ADC_OVR_DATA_OVERWRITTEN,      \
+        .Init.OversamplingMode         = DISABLE,                       \
+>>>>>>> upstream/master
     }
 #endif /* ADC1_CONFIG */
 #endif /* BSP_USING_ADC1 */
 
 #ifdef BSP_USING_ADC2
 #ifndef ADC2_CONFIG
+<<<<<<< HEAD
 #define ADC2_CONFIG                                                 \
     {                                                               \
        .Instance                   = ADC2,                          \
@@ -55,12 +76,32 @@ extern "C" {
        .Init.ExternalTrigConv      = ADC_EXTERNALTRIG_T3_TRGO,            \
        .Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_RISING, \
        /*.Init.DMAContinuousRequests = DISABLE,  */                     \
+=======
+#define ADC2_CONFIG                                                     \
+    {                                                                   \
+        .Instance                      = ADC2,                          \
+        .Init.ClockPrescaler           = ADC_CLOCK_SYNC_PCLK_DIV4,      \
+        .Init.Resolution               = ADC_RESOLUTION_16B,            \
+        .Init.ScanConvMode             = ADC_SCAN_DISABLE,              \
+        .Init.EOCSelection             = ADC_EOC_SINGLE_CONV,           \
+        .Init.LowPowerAutoWait         = DISABLE,                       \
+        .Init.ContinuousConvMode       = DISABLE,                       \
+        .Init.NbrOfConversion          = 1,                             \
+        .Init.DiscontinuousConvMode    = DISABLE,                       \
+        .Init.NbrOfDiscConversion      = 1,                             \
+        .Init.ExternalTrigConv         = ADC_SOFTWARE_START,            \
+        .Init.ExternalTrigConvEdge     = ADC_EXTERNALTRIGCONVEDGE_NONE, \
+        .Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR,         \
+        .Init.Overrun                  = ADC_OVR_DATA_OVERWRITTEN,      \
+        .Init.OversamplingMode         = DISABLE,                       \
+>>>>>>> upstream/master
     }
 #endif /* ADC2_CONFIG */
 #endif /* BSP_USING_ADC2 */
 
 #ifdef BSP_USING_ADC3
 #ifndef ADC3_CONFIG
+<<<<<<< HEAD
 #define ADC3_CONFIG                                                 \
     {                                                               \
        .Instance                   = ADC3,                          \
@@ -80,6 +121,25 @@ extern "C" {
       /* .Init.DMAContinuousRequests = DISABLE,               */        \
        .Init.Overrun               = ADC_OVR_DATA_OVERWRITTEN,          \
        .Init.OversamplingMode       = DISABLE,            \
+=======
+#define ADC3_CONFIG                                                     \
+    {                                                                   \
+        .Instance                      = ADC3,                          \
+       .Init.ClockPrescaler            = ADC_CLOCK_SYNC_PCLK_DIV4,      \
+        .Init.Resolution               = ADC_RESOLUTION_16B,            \
+        .Init.ScanConvMode             = ADC_SCAN_DISABLE,              \
+        .Init.EOCSelection             = ADC_EOC_SINGLE_CONV,           \
+        .Init.LowPowerAutoWait         = DISABLE,                       \
+        .Init.ContinuousConvMode       = DISABLE,                       \
+        .Init.NbrOfConversion          = 1,                             \
+        .Init.DiscontinuousConvMode    = DISABLE,                       \
+        .Init.NbrOfDiscConversion      = 1,                             \
+        .Init.ExternalTrigConv         = ADC_SOFTWARE_START,            \
+        .Init.ExternalTrigConvEdge     = ADC_EXTERNALTRIGCONVEDGE_NONE, \
+        .Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR,         \
+        .Init.Overrun                  = ADC_OVR_DATA_OVERWRITTEN,      \
+        .Init.OversamplingMode         = DISABLE,                       \
+>>>>>>> upstream/master
     }
 #endif /* ADC3_CONFIG */
 #endif /* BSP_USING_ADC3 */

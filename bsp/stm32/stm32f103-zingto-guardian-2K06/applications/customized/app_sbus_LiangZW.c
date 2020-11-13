@@ -207,8 +207,7 @@ void sbus_resolving_entry(void* parameter)
                     ptz_request = RT_TRUE;
                 }
                 break;
-            case SBUS_CH(12): // zoom
-            {
+            case SBUS_CH(12):{  // zoom
                 rt_int8_t tmpuc = 0;
                 rt_int16_t differ = 0;
                 
@@ -255,9 +254,36 @@ void sbus_resolving_entry(void* parameter)
                         }
                     }
                 }
-            }
                 break;
-
+            }
+            
+//            case SBUS_CH(11): // done
+//                if (pval[i] < SBUS_THRESHOLD_INVAILED)
+//                    tmp_status = SBUS_INVAILD;
+//                else if (pval[i] < SBUS_THRESHOLD_LOW)
+//                    tmp_status = SBUS_LOW;
+//                else if (pval[i] < SBUS_THRESHOLD_HIGH)
+//                    tmp_status = SBUS_IDLE;
+//                else
+//                    tmp_status = SBUS_HIGH;
+//                
+//                if (env->ch_status[i] != tmp_status)
+//                {
+//                    env->ch_status[i] = tmp_status;
+//                    
+//                    ptz_request = RT_TRUE;
+//                    env->ptz_action = PANTILT_ACTION_NULL;
+//                    
+//                    if (env->ch_status[i] == SBUS_HIGH)
+//                        env->ptz_mode = PANTILT_MODE_HEADDOWN;
+//                    else if (env->ch_status[i] == SBUS_IDLE)
+//                        env->ptz_mode = PANTILT_MODE_HEADFREE;
+//                    else if (env->ch_status[i] == SBUS_LOW)
+//                        env->ptz_mode = PANTILT_MODE_HEADLOCK;
+//                    else
+//                        ptz_request = RT_FALSE;
+//                }
+//                break;
             case SBUS_CH(13): // capture & record
                 if (pval[i] < SBUS_THRESHOLD_INVAILED)
                     tmp_status = SBUS_INVAILD;
@@ -297,7 +323,7 @@ void sbus_resolving_entry(void* parameter)
                 }
                 break;
 
-//            case SBUS_CH(7): // tracker 
+//            case SBUS_CH(12): // tracker 
 //                if (pval[i] < SBUS_THRESHOLD_INVAILED)
 //                    tmp_status = SBUS_INVAILD;
 //                else if (pval[i] < SBUS_THRESHOLD_LOW)
@@ -333,7 +359,7 @@ void sbus_resolving_entry(void* parameter)
 //                    }
 //                }
 //                break;
-//            case SBUS_CH(8): // return home pos
+//            case SBUS_CH(13): // return home pos
 //                if (pval[i] < SBUS_THRESHOLD_INVAILED)
 //                    tmp_status = SBUS_INVAILD;
 //                else if (pval[i] < SBUS_THRESHOLD_LOW)
@@ -354,7 +380,6 @@ void sbus_resolving_entry(void* parameter)
 //                    }
 //                }
 //                break;
-
             case SBUS_CH(14): // pip mode & ir color
                 if (pval[i] < SBUS_THRESHOLD_INVAILED)
                     tmp_status = SBUS_INVAILD;

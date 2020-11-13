@@ -211,7 +211,7 @@ int app_create_send(const char* dstIp, rt_uint16_t dstPort[2]) {
        idx = app_check_send(dstIp, dstPort);
        if (idx != -1) {
            rt_kprintf("connect '%s: %u & %u' connected\n", dstIp, dstPort[0], dstPort[1]);
-           return idx;     
+           return idx;
        }  
        else {
            rt_kprintf("another connect '%s'\n", dstIp);

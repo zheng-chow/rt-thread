@@ -46,7 +46,7 @@ extern void create_sin(void);
 #include <dfs_file.h>
 #include <dfs_posix.h>
 
-rt_err_t load_ethernet_parameter(void)
+static int lan_load_configSets(void)
 {
     const char* FILENAME = "netif.json";
     const rt_size_t JSON_BUFFER_SIZE = 1024;
@@ -63,12 +63,13 @@ rt_err_t load_ethernet_parameter(void)
     fd = open(FILENAME, O_RDONLY, 0);
     if (fd < 0) {
         LOG_W("read config failed! creating a default config");
-        
+
         fd = open(FILENAME, O_WRONLY | O_CREAT, 0);
         if (fd < 0) {
             LOG_E("create config file failed!");
             return -RT_EIO;
         }
+        
         root = cJSON_CreateObject();
         cJSON_AddItemToObject(root, "Interface", cJSON_CreateString("e0"));
         cJSON_AddItemToObject(root, "Address", cJSON_CreateString(RT_LWIP_IPADDR));
@@ -76,9 +77,12 @@ rt_err_t load_ethernet_parameter(void)
         cJSON_AddItemToObject(root, "Netmask", cJSON_CreateString(RT_LWIP_MSKADDR));
 
         json = cJSON_Print(root);
+        
         write(fd, json, rt_strlen(json));
         rt_free(json);
         close(fd);
+        
+        rt_thread_delay(RT_TICK_PER_SECOND * 2);
     }
     else {
         json = rt_malloc(JSON_BUFFER_SIZE);
@@ -87,13 +91,23 @@ rt_err_t load_ethernet_parameter(void)
             return -RT_ENOMEM;
         }
         
+        rt_memset(json, 0, JSON_BUFFER_SIZE);
+        
         size = read(fd, json, JSON_BUFFER_SIZE);
         if (size == JSON_BUFFER_SIZE)
             LOG_W("json buffer is full!");
         
+        if (size == 0) {
+            LOG_W("json file is empty");
+            close(fd);
+            return -RT_EIO;
+        }
+        
         root = cJSON_Parse(json);
         rt_free(json);
         close(fd);
+        
+        rt_thread_delay(RT_TICK_PER_SECOND / 2);
     }
     
     interface = cJSON_GetObjectItem(root, "Interface")->valuestring;
@@ -119,13 +133,12 @@ rt_err_t load_ethernet_parameter(void)
             LOG_E("netmask '%s' is invalid", netmask);
         }            
         else{
-            
             rt_uint8_t cnt = 15;                
             netdev_set_down(dev);
             netdev_set_ipaddr(dev,&a);
-            netdev_set_gw(dev,&gw);                                
-            netdev_set_netmask(dev,&nm);                                
-            netdev_set_up(dev);                
+            netdev_set_gw(dev,&gw);
+            netdev_set_netmask(dev,&nm);
+            netdev_set_up(dev);
             LOG_I("config address '%s' finished, wait link up...", address);
             while ((!(dev->flags & NETIF_FLAG_LINK_UP)) && (!cnt)){
                 rt_thread_delay(RT_TICK_PER_SECOND/5); cnt--;
@@ -331,7 +344,7 @@ int main(void)
 #endif
 
 #if defined(RT_USING_LWIP)
-    load_ethernet_parameter();
+    lan_load_configSets();
 #endif
 
     adc_control_server();
@@ -340,7 +353,7 @@ int main(void)
     extern void telnet_server(void);
     telnet_server();
 #endif
-
+    
     while (count++)
     {
         rt_pin_write(BLINK_PIN, PIN_HIGH);

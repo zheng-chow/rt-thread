@@ -49,7 +49,7 @@
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 256
 #define RT_CONSOLE_DEVICE_NAME "uart0"
-#define RT_VER_NUM 0x40002
+#define RT_VER_NUM 0x40003
 #define ARCH_ARM
 #define ARCH_ARM_CORTEX_A
 #define ARCH_ARM_CORTEX_A9
@@ -132,13 +132,8 @@
 #define RT_USING_SFUD
 #define RT_SFUD_USING_SFDP
 #define RT_SFUD_USING_FLASH_INFO_TABLE
+#define RT_SFUD_SPI_MAX_HZ 50000000
 #define RT_USING_WDT
-
-/* Using Hardware Crypto drivers */
-
-
-/* Using WiFi */
-
 
 /* Using USB */
 
@@ -213,11 +208,9 @@
 #define LWIP_SO_RCVTIMEO 1
 #define LWIP_SO_SNDTIMEO 1
 #define LWIP_SO_RCVBUF 1
+#define LWIP_SO_LINGER 0
 #define LWIP_NETIF_LOOPBACK 0
 #define RT_LWIP_USING_PING
-
-/* Modbus master and slave stack */
-
 
 /* AT commands */
 
@@ -226,6 +219,7 @@
 
 
 /* Utilities */
+
 #define RT_USING_LWP
 
 /* RT-Thread online packages */

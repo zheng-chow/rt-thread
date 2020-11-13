@@ -27,7 +27,7 @@
 /* read pipe delay: 0, 1, 2 */
 #define SDRAM_RPIPE_DELAY               0
 /* clock divid: 2, 3 */
-#define SDCLOCK_PERIOD                  2
+#define SDCLOCK_PERIOD                  3
 /* refresh rate counter */
 #define SDRAM_REFRESH_COUNT             ((uint32_t)0x02A5)
 #define SDRAM_SIZE                      ((uint32_t) 0x400 * 0x400 *EXT_SDRAM_SIZE_MB)//((uint32_t)0x2000000)

@@ -123,7 +123,7 @@ void zingto_resolving_entry(void* parameter)
         case 0x00:  // stop
             //env->ch_value[0] = SBUS_VALUE_MEDIAN;
             env->ch_value[9] = SBUS_VALUE_MEDIAN;
-            //env->ch_value[3] = SBUS_VALUE_MEDIAN;
+            env->ch_value[10] = SBUS_VALUE_MEDIAN;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
@@ -138,22 +138,22 @@ void zingto_resolving_entry(void* parameter)
 //            ptz_request = RT_TRUE;
 //            break;
         case 0x01:  // pitch -
-            env->ch_value[10] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->ch_value[9] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
         case 0x02:  // pitch +
-            env->ch_value[10] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->ch_value[9] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
         case 0x03:  // yaw -
-            env->ch_value[11] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->ch_value[10] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
         case 0x04:  // yaw +
-            env->ch_value[11] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->ch_value[10] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;

@@ -541,12 +541,14 @@ static rt_err_t _jcdev_load_config(char *filename)
     fd = open(filename, O_RDONLY, 0);
     if (fd < 0) {
         LOG_E("read config failed! maybe there's no file?");
+        close(fd);
         return -RT_EIO;
     }
     
     json = rt_malloc(CONFIG_JSON_SIZE);
     if (json == RT_NULL) {
         LOG_E("malloc buffer for json failed!");
+        close(fd);
         return -RT_ENOMEM;
     }
     

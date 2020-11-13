@@ -90,6 +90,7 @@
 #define RT_DFS_ELM_MAX_LFN 255
 #define RT_DFS_ELM_DRIVES 2
 #define RT_DFS_ELM_MAX_SECTOR_SIZE 4096
+#define RT_DFS_ELM_USE_ERASE
 #define RT_DFS_ELM_REENTRANT
 #define RT_USING_DFS_DEVFS
 
@@ -112,6 +113,7 @@
 #define RT_SFUD_USING_SFDP
 #define RT_SFUD_USING_FLASH_INFO_TABLE
 #define RT_SFUD_USING_QSPI
+
 #define RT_SFUD_SPI_MAX_HZ 50000000
 
 /* Using USB */
@@ -226,6 +228,7 @@
 /* Wiced WiFi */
 
 #define PKG_USING_NETUTILS
+#define PKG_NETUTILS_TELNET
 #define PKG_USING_NETUTILS_V110
 
 /* IoT Cloud */
@@ -289,6 +292,7 @@
 #define BSP_USING_GPIO
 #define BSP_USING_ETH
 #define BSP_USING_QSPI
+#define BSP_QSPI_USING_DMA
 #define BSP_USING_UART
 #define BSP_USING_UART1
 #define BSP_USING_SPI

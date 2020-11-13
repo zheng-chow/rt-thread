@@ -393,7 +393,7 @@ void HAL_QSPI_MspInit(QSPI_HandleTypeDef* hqspi)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF9_QUADSPI;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
+    
   /* USER CODE BEGIN QUADSPI_MspInit 1 */
 
   /* USER CODE END QUADSPI_MspInit 1 */

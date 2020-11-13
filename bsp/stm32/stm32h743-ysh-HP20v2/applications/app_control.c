@@ -679,9 +679,12 @@ rt_uint16_t load_server_port(void)
         cJSON_AddItemToObject(root, "UDP2_LocalPort1", cJSON_CreateNumber(DEFAULT_UDP2_LOCALPORT1));
         
         json = cJSON_Print(root);
+        
         write(fd, json, rt_strlen(json));
         rt_free(json);
         close(fd);
+        
+        rt_thread_delay(RT_TICK_PER_SECOND * 2);
     }
     else {
         json = rt_malloc(JSON_BUFFER_SIZE);
@@ -694,10 +697,17 @@ rt_uint16_t load_server_port(void)
         size = read(fd, json, JSON_BUFFER_SIZE);
         if (size == JSON_BUFFER_SIZE)
             LOG_W("json buffer is full!");
+        if (size == 0) {
+            LOG_W("json file is empty");
+            close(fd);
+            return -RT_EIO;
+        }
         
         root = cJSON_Parse(json);
         rt_free(json);
         close(fd);
+        
+        rt_thread_delay(RT_TICK_PER_SECOND / 2);
     }
     
     rt_uint16_t port = cJSON_GetObjectItem(root, "SERVER_PORT")->valueint;

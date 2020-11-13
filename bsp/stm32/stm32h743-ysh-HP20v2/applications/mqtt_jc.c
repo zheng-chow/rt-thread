@@ -442,6 +442,8 @@ rt_err_t load_mqtt_config(void)
         write(fd, json, rt_strlen(json));
         rt_free(json);
         close(fd);
+        
+        rt_thread_delay(RT_TICK_PER_SECOND * 2);
     }
     else {
         json = rt_malloc(JSON_BUFFER_SIZE);
@@ -450,6 +452,8 @@ rt_err_t load_mqtt_config(void)
             return -RT_ENOMEM;
         }
         
+        rt_memset(json, 0, JSON_BUFFER_SIZE);
+        
         size = read(fd, json, JSON_BUFFER_SIZE);
         if (size == JSON_BUFFER_SIZE)
             LOG_W("json buffer is full!");
@@ -457,6 +461,8 @@ rt_err_t load_mqtt_config(void)
         root = cJSON_Parse(json);
         rt_free(json);
         close(fd);
+        
+        rt_thread_delay(RT_TICK_PER_SECOND / 2);
     }
     
     char * strp = RT_NULL;
@@ -480,7 +486,6 @@ rt_err_t load_mqtt_config(void)
     LOG_I("PubTopic %s", MQTT_CONFIG.PubTopic);
     LOG_I("SubTopic %s", MQTT_CONFIG.SubTopic);
     
-    
     cJSON_Delete(root);
     
     return RT_EOK;
@@ -488,9 +493,8 @@ rt_err_t load_mqtt_config(void)
 
 int mqtt_server_init(void)
 {
-    load_mqtt_config();
-    
-    mqtt_start(1, RT_NULL);
+    if (load_mqtt_config() == RT_EOK)
+        mqtt_start(1, RT_NULL);
     
     return 0;
 }
