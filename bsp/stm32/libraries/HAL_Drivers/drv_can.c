@@ -23,8 +23,7 @@
 #if defined (SOC_SERIES_STM32F1)/* APB1 36MHz(max) */
 static const struct stm32_baud_rate_tab can_baud_rate_tab[] =
 {
-    //{CAN1MBaud, (CAN_SJW_2TQ | CAN_BS1_11TQ  | CAN_BS2_3TQ | 2)},  // HSI, PCLK = 32MHz
-    {CAN1MBaud, (CAN_SJW_2TQ | CAN_BS1_8TQ  | CAN_BS2_3TQ | 3)},   // HSE, PCLK = 36MHz 
+    {CAN1MBaud, (CAN_SJW_2TQ | CAN_BS1_8TQ  | CAN_BS2_3TQ | 3)},   
     {CAN800kBaud, (CAN_SJW_2TQ | CAN_BS1_5TQ  | CAN_BS2_3TQ | 5)},
     {CAN500kBaud, (CAN_SJW_2TQ | CAN_BS1_8TQ  | CAN_BS2_3TQ | 6)},
     {CAN250kBaud, (CAN_SJW_2TQ | CAN_BS1_8TQ  | CAN_BS2_3TQ | 12)},
@@ -306,16 +305,16 @@ static rt_err_t _can_control(struct rt_can_device *can, int cmd, void *arg)
             {
                 struct rt_can_filter_item *item = filter_cfg->items + i;
                 drv_can->FilterConfig.FilterBank = i;
-                if (item->ide)//ext
-                {
+                if (item->ide) {    //ext
                     drv_can->FilterConfig.FilterIdHigh = ((filter_cfg->items[i].id <<3) >> 16) & 0xFFFF;
                     drv_can->FilterConfig.FilterIdLow = ((filter_cfg->items[i].id << 3) | 
                                                         (filter_cfg->items[i].ide << 2) | 
                                                         (filter_cfg->items[i].rtr << 1)) & 0xFFFF;
                     drv_can->FilterConfig.FilterMaskIdHigh = (filter_cfg->items[i].mask >> 16) & 0xFFFF;
                     drv_can->FilterConfig.FilterMaskIdLow = filter_cfg->items[i].mask & 0xFFFF;
-                    drv_can->FilterConfig.FilterMode = filter_cfg->items[i].mode;                }
-                else{
+                    drv_can->FilterConfig.FilterMode = filter_cfg->items[i].mode;                
+                }
+                else {
                     drv_can->FilterConfig.FilterIdHigh = (filter_cfg->items[i].id << 5) & 0xFFFF;
                     drv_can->FilterConfig.FilterIdLow =  (filter_cfg->items[i].rtr << 1) & 0xFFFF;
                     drv_can->FilterConfig.FilterMaskIdHigh = (filter_cfg->items[i].mask >> 16) & 0xFFFF;
@@ -323,16 +322,6 @@ static rt_err_t _can_control(struct rt_can_device *can, int cmd, void *arg)
                     drv_can->FilterConfig.FilterMode = filter_cfg->items[i].mode;                      
                 }
 
-#if 0                
-                drv_can->FilterConfig.FilterBank = filter_cfg->items[i].hdr;
-                drv_can->FilterConfig.FilterIdHigh = (filter_cfg->items[i].id >> 13) & 0xFFFF;
-                drv_can->FilterConfig.FilterIdLow = ((filter_cfg->items[i].id << 3) | 
-                                                    (filter_cfg->items[i].ide << 2) | 
-                                                    (filter_cfg->items[i].rtr << 1)) & 0xFFFF;
-                drv_can->FilterConfig.FilterMaskIdHigh = (filter_cfg->items[i].mask >> 16) & 0xFFFF;
-                drv_can->FilterConfig.FilterMaskIdLow = filter_cfg->items[i].mask & 0xFFFF;
-                drv_can->FilterConfig.FilterMode = filter_cfg->items[i].mode;
-#endif
                 /* Filter conf */
                 HAL_CAN_ConfigFilter(&drv_can->CanHandle, &drv_can->FilterConfig);
             }
@@ -725,13 +714,6 @@ void CAN1_SCE_IRQHandler(void)
         break;
     case RT_CAN_BUS_ACK_ERR:/* attention !!! test ack err's unit is transmit unit */
         drv_can1.device.status.ackerrcnt++;
-        /*if (!READ_BIT(drv_can1.CanHandle.Instance->TSR, CAN_FLAG_TXOK0))
-            rt_hw_can_isr(&drv_can1.device, RT_CAN_EVENT_TX_FAIL | 0 << 8);
-        else if (!READ_BIT(drv_can1.CanHandle.Instance->TSR, CAN_FLAG_TXOK1))
-            rt_hw_can_isr(&drv_can1.device, RT_CAN_EVENT_TX_FAIL | 1 << 8);
-        else if (!READ_BIT(drv_can1.CanHandle.Instance->TSR, CAN_FLAG_TXOK2))
-            rt_hw_can_isr(&drv_can1.device, RT_CAN_EVENT_TX_FAIL | 2 << 8);
-    */
         break;
     case RT_CAN_BUS_IMPLICIT_BIT_ERR:
     case RT_CAN_BUS_EXPLICIT_BIT_ERR:
@@ -741,6 +723,7 @@ void CAN1_SCE_IRQHandler(void)
         drv_can1.device.status.crcerrcnt++;
         break;
     }
+
     do{
         uint32_t snderrcnt = (errtype >> 16 & 0xFF);
         if (snderrcnt > drv_can1.device.status.snderrcnt){
@@ -860,12 +843,6 @@ void CAN2_SCE_IRQHandler(void)
         break;
     case RT_CAN_BUS_ACK_ERR:
         drv_can2.device.status.ackerrcnt++;
-        /*if (!READ_BIT(drv_can1.CanHandle.Instance->TSR, CAN_FLAG_TXOK0))
-            rt_hw_can_isr(&drv_can2.device, RT_CAN_EVENT_TX_FAIL | 0 << 8);
-        else if (!READ_BIT(drv_can2.CanHandle.Instance->TSR, CAN_FLAG_TXOK1))
-            rt_hw_can_isr(&drv_can2.device, RT_CAN_EVENT_TX_FAIL | 1 << 8);
-        else if (!READ_BIT(drv_can2.CanHandle.Instance->TSR, CAN_FLAG_TXOK2))
-            rt_hw_can_isr(&drv_can2.device, RT_CAN_EVENT_TX_FAIL | 2 << 8);*/
         break;
     case RT_CAN_BUS_IMPLICIT_BIT_ERR:
     case RT_CAN_BUS_EXPLICIT_BIT_ERR:
@@ -874,7 +851,8 @@ void CAN2_SCE_IRQHandler(void)
     case RT_CAN_BUS_CRC_ERR:
         drv_can2.device.status.crcerrcnt++;
         break;
-    }    
+    }
+
     do{
         uint32_t snderrcnt = (errtype >> 16 & 0xFF);
         if (snderrcnt > drv_can2.device.status.snderrcnt){
