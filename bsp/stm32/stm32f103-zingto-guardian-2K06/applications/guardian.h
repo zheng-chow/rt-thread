@@ -125,6 +125,10 @@ struct guardian_environment
     
     // User
     rt_bool_t       user_incharge;
+    rt_uint16_t     user_pitch;
+    rt_uint16_t     user_roll;
+    rt_uint16_t     user_yaw;
+    rt_uint16_t     user_zoom;
     
     // Track
     rt_bool_t       trck_incharge;

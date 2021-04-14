@@ -18,6 +18,8 @@
 
 #include "spi_flash.h"
 #include "spi_flash_sfud.h"
+#include <dfs_fs.h>
+#include <fal.h>
 
 char w25qxx_read_status_register2(struct rt_qspi_device *device)
 {
@@ -74,30 +76,41 @@ static int rt_hw_qspi_flash_with_sfud_init(void)
 }
 INIT_DEVICE_EXPORT(rt_hw_qspi_flash_with_sfud_init);
 
-#if defined(RT_USING_DFS_ELMFAT) && !defined(BSP_USING_SDCARD)
+#if defined(PKG_USING_FAL)
+static int fal_load_init(void)
+{
+    return fal_init();
+}
+INIT_COMPONENT_EXPORT(fal_load_init);
+#endif
+
 #include <dfs_fs.h>
 
-#define BLK_DEV_NAME  "W25Q128BV"
-
+#define BLK_DEV_NAME        "W25Q128BV"
+#define FS_PARTITION_NAME   "rootfs"
 int mnt_init(void)
 {
-    rt_thread_delay(RT_TICK_PER_SECOND);
+    rt_device_t mtd_nor = fal_mtd_nor_device_create(FS_PARTITION_NAME);
+    if (!mtd_nor) 
+    {
+        LOG_E("Can't create a mtd device on '%s' partition.", FS_PARTITION_NAME);
+    }
 
-    if (dfs_mount(BLK_DEV_NAME, "/", "elm", 0, 0) == 0)
+    if (dfs_mount(FS_PARTITION_NAME, "/", "lfs", 0, 0) == 0)
     {
         rt_kprintf("file system initialization done!\n");
     }
     else
     {
-        if(dfs_mkfs("elm", BLK_DEV_NAME) == 0)
+        if(dfs_mkfs("lfs", FS_PARTITION_NAME) == 0)
         {
-            if (dfs_mount(BLK_DEV_NAME, "/", "elm", 0, 0) == 0)
+            if (dfs_mount(FS_PARTITION_NAME, "/", "lfs", 0, 0) == 0)
             {
-                rt_kprintf("file system initialization done!\n");
+                rt_kprintf("LittleFS initialization done!\n");
             }
             else
             {
-                rt_kprintf("file system initialization failed!\n");
+                rt_kprintf("LittleFS initialization failed!\n");
             }
         }
     }
@@ -106,5 +119,4 @@ int mnt_init(void)
 }
 INIT_ENV_EXPORT(mnt_init);
 
-#endif /* defined(RT_USING_DFS_ELMFAT) && !defined(BSP_USING_SDCARD) */
 #endif/* BSP_USING_QSPI_FLASH */

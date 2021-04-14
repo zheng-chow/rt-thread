@@ -52,10 +52,10 @@ rt_bool_t app_create_adc(void){
    
     __adc_handler->dev_adc_channel = rt_device_find("adcdma");
     __adc_handler->dev_adc_baseline = (rt_adc_device_t)rt_device_find("adc3");
-    __adc_handler->tid_adc_channel = rt_thread_create("channel", app_adc_channel_entry
-        , __adc_handler, 4096, 13, RT_TICK_PER_SECOND / 20);
-    __adc_handler->tid_adc_baseline = rt_thread_create("baseline", app_adc_baseline_entry
-        , __adc_handler, 4096, 14, RT_TICK_PER_SECOND / 20);
+    __adc_handler->tid_adc_channel = rt_thread_create("channel", app_adc_channel_entry, \
+                                      __adc_handler, 4096, 13, RT_TICK_PER_SECOND / 20);
+    __adc_handler->tid_adc_baseline = rt_thread_create("baseline", app_adc_baseline_entry, \
+                                      __adc_handler, 4096, 14, RT_TICK_PER_SECOND / 20);
 
     if (__adc_handler->dev_adc_channel
         && __adc_handler->dev_adc_baseline
@@ -73,6 +73,7 @@ rt_bool_t app_create_adc(void){
         return RT_FALSE;
     }
 }
+
 rt_bool_t app_delete_adc(void){
     if (!__adc_handler) return RT_TRUE;    
     if (__adc_handler->tid_adc_channel)
@@ -90,12 +91,14 @@ rt_bool_t app_delete_adc(void){
     __adc_handler = RT_NULL;  
     return RT_TRUE;
 }
+
 rt_bool_t set_adc_callback_function(adc_callback_parameter_t h, adc_callback_function_t f){
     if (!__adc_handler) return RT_FALSE;
     __adc_handler->func = f;
     __adc_handler->p = h;
     return RT_TRUE;
 }
+
 rt_bool_t app_start_adc(void){
     if (!__adc_handler) return RT_FALSE;
     if (!__adc_handler->func) return RT_FALSE;
@@ -134,73 +137,17 @@ rt_bool_t app_adc_is_exist(void){
 
 #pragma location=0xC0400000
 rt_uint16_t cosbuffer[SINCOS_POINTS];
-
-//#pragma location=0xC0600000
-//float sinValue[SINCOS_POINTS];
-//#pragma location=0xC0600000
-//float cosValue[SINCOS_POINTS];
-//#pragma location=0xC0A00000
-//float fitValue[FIT_BUFFER_SZ];
-
 #elif defined ( __CC_ARM )
 
 __attribute__((at(0xC0400000))) rt_uint16_t cosbuffer[SINCOS_POINTS];
-//__attribute__((at(0xC0600000))) float sinValue[SINCOS_POINTS];
-//__attribute__((at(0xC0800000))) float cosValue[SINCOS_POINTS];
-//__attribute__((at(0xC0A00000))) float fitValue[FIT_BUFFER_SZ];
 
 #endif
 
 void create_sin(void){
     for (rt_int32_t n = 0; n < SINCOS_POINTS;n++){
       cosbuffer[n] = (cos(n*M_PI/(SINCOS_POINTS/2))+1)*0.5*0xFFF;
-        //sinValue[n] = sin(n*M_PI/(SINCOS_POINTS/2));
-        //cosValue[n] = cos(n*M_PI/(SINCOS_POINTS/2));
     }
 }
-/*
-static float fit_mean(float* pdata, rt_uint32_t groups){
-    float value = 0;
-    for(rt_uint32_t g=0; g<groups; g++)
-        value += pdata[g];
-    value /= groups;
-    return value;
-}*/
-/*
-static rt_bool_t app_adc_fit(rt_uint8_t* adc_data, rt_uint32_t adc_data_len
-    , adc_timestamp_t stamp, adc_fit_t fit){
-    const float DELTA = 0.3f;
-    const float KAPPA = 0.8f;
-    const float ALPHA = 0.2f;
-    const float         ERR = 0.0001;
-    const rt_uint8_t    CNT = 10;
-    rt_bool_t           bConvergence = RT_FALSE;
-    
-
-    rt_uint32_t groups = adc_data_len/6;
-    rt_uint16_t* pdata = (rt_uint16_t*)adc_data;
-    for (rt_uint8_t c = 0; c < stamp.cnls; c++){
-        float Y[4]={0,0,0,0};
-        float dX[4]={0,0,0,0};
-        float X[4]={0,0,0,0};
-        float A[4][4]={{0,0,0,0},{0,0,0,0},{0,0,0,0},{0,0,0,0}};
-        rt_int32_t n = 0, k =0 , i = 0 ,j = 0;
-        float err = 100;
-        rt_int32_t cnt = 10;
-        fit.valid = RT_FALSE;
-        fitValue[0] = adc_data[c]*1.25f / 0xFFF;
-        for (rt_uint32_t g = 1; g < groups; g++){
-            rt_uint32_t idx = g * stamp.cnls + c;
-            fitValue[g] = adc_data[idx]*1.25f / 0xFFF;
-            
-            
-        }
-        X[3] = fit_mean(fitValue, groups);
- 
-    }
-
-    return bConvergence;
-}*/
 
 void app_adc_fake(rt_uint8_t* adc_data, rt_uint32_t adc_data_len, rt_uint32_t index, adc_timestamp_t stamp){
     rt_uint32_t groups = adc_data_len/6;
@@ -254,11 +201,13 @@ static void app_adc_channel_entry(void* parameter){
     rt_uint32_t timeInc = 0;
     struct adc_app_channel* cnl = RT_NULL;
     rt_device_open(handler->dev_adc_channel, 0);
+    
     while(1){
-        err = rt_event_recv(&handler->evt_adc_channel, 0x03, RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR
-        , RT_TICK_PER_SECOND/5, &evt);
+        err = rt_event_recv(&handler->evt_adc_channel, 0x03, \
+                            RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR, \
+                            RT_TICK_PER_SECOND/5, &evt);
+        
         if (err == RT_EOK){
-
             index = (evt & 0x01)?0:1;
             cnl = &handler->channel[index];
             if (cnl->cnl[cnl->o_sel].channel_size == 0){
@@ -295,9 +244,10 @@ static void app_adc_channel_entry(void* parameter){
             bOn = !bOn;           
         }       
     }
+    
     rt_device_close(handler->dev_adc_channel);
-
 }
+
 static void app_adc_baseline_entry(void* parameter){
     while (1){
         if (!adc_update_baseline())
@@ -305,6 +255,7 @@ static void app_adc_baseline_entry(void* parameter){
         rt_thread_mdelay(5000);        
     }
 }
+
 static rt_err_t adc_channel_rx_ind(rt_device_t dev, rt_size_t size){
     rt_uint32_t index = stm32_rx_info_get_adc_index(size);
     rt_uint32_t length = stm32_rx_info_get_adc_length(size);
@@ -334,6 +285,7 @@ static rt_err_t adc_channel_rx_ind(rt_device_t dev, rt_size_t size){
 
     return RT_EOK;
 }
+
 static rt_bool_t adc_update_baseline(void){
     if (!__adc_handler) return RT_FALSE;   
     rt_uint32_t value = rt_adc_read(__adc_handler->dev_adc_baseline, BASELINE_CNL);
@@ -344,4 +296,3 @@ static rt_bool_t adc_update_baseline(void){
         __adc_handler->baseline_valid = RT_FALSE;
     return RT_TRUE;
 }
-

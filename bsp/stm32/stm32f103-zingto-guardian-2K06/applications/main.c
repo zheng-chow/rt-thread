@@ -20,7 +20,7 @@
 
 #define MODE_PIN       GET_PIN(B, 3)
 
-#define APP_VERSION "2.01.PuZhi"
+#define APP_VERSION "2.02.Korea"
 #define RT_APP_PART_ADDR    0x08020000
 
 static struct guardian_environment env;
@@ -75,7 +75,7 @@ int main(void)
     result = rt_thread_startup(pthread);
     RT_ASSERT(result == RT_EOK);
     
-    if (rt_pin_read(MODE_PIN) == 1)
+//    if (rt_pin_read(MODE_PIN) == 1)
     {
         rt_kprintf("Mode Select: SBUS\n");
         pthread = rt_thread_create("tSBus", sbus_resolving_entry, &env, 2048, 3, 20);
@@ -83,7 +83,7 @@ int main(void)
         result = rt_thread_startup(pthread);
         RT_ASSERT(result == RT_EOK);
     }
-    else
+//    else
     {
         rt_kprintf("Mode Select: UART\n");
         pthread = rt_thread_create("tZINGTO", zingto_resolving_entry, &env, 2048, 3, 20);
@@ -112,9 +112,9 @@ int main(void)
     {
         
         if (env.trck_incharge == RT_TRUE)
-            rt_thread_delay(RT_TICK_PER_SECOND / 5);
+            rt_thread_delay(RT_TICK_PER_SECOND / 3);
         else
-            rt_thread_delay(RT_TICK_PER_SECOND / 5);
+            rt_thread_delay(RT_TICK_PER_SECOND / 3);
 
 //        rt_kprintf("%4d %4d %4d %4d %4d %4d %4d %4d %4d\r", \
 //                    env.ch_value[0], env.ch_value[1], env.ch_value[2], env.ch_value[3], env.ch_value[4], \

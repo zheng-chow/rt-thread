@@ -13,13 +13,18 @@
 
 #include <board.h>
 
-#define EConst  (3200)
+#define EConst  (3200 / (220.f / 120.f))
 #define Ust     (24000000L)      // 0x016E3600   120V
 #define Ist     (8000000L)       // 0x007A1200   3A
-#define Pst     (22888183)       // 120V * 3A    360W   (Ust * Ist) / 2^23
+#define Pst     (22888184)       // 120V * 3A    360W   (Ust * Ist) / 2^23
+#define P05st   (Pst/2)
 
-#define CONFIG_FILENAME     "jc_config.json"
-#define CONFIG_JSON_SIZE    (2048)
+#define CONFIG_FILENAME                 "jc_config.json"
+#define CONFIG_JSON_MAXSIZE             (2048)
+
+#define EMULOG_FILENAME                 "jc_emulog.json"
+#define EMULOG_JSON_MAXSIZE             (1024)
+#define EMULOG_PREIOD                   (30)    // second
 
 #define WAVE_SAMPLE_COUNT               (128)
 #define FFT_PI                          (3.1415926f)
@@ -66,6 +71,23 @@ struct jcdev_harmonic_t
     float phsC_HA[HARMONIC_NUMBER];
 };
 
+struct jcdev_energy_t
+{
+    rt_uint64_t WRCYCLE;
+    double EPA;
+    double EPB;
+    double EPC;
+    double EPT;
+    double EQA;
+    double EQB;
+    double EQC;
+    double EQT;
+    double PosEPT;
+    double PosEQT;
+    double NegEPT;
+    double NegEQT;
+};
+
 struct jcdev_stdef_t
 {
     rt_uint16_t HFConst;
@@ -78,11 +100,7 @@ struct jcdev_stdef_t
     rt_uint16_t GSIB;
     rt_uint16_t GSIC;
     rt_uint16_t GSIN;
-    // Phase offset
-    rt_uint16_t PHSIA;
-    rt_uint16_t PHSIB;
-    rt_uint16_t PHSIC;
-    
+
     rt_uint16_t PRTH1L;
     rt_uint16_t PRTH1H;
     rt_uint16_t PRTH2L;
@@ -91,7 +109,7 @@ struct jcdev_stdef_t
     rt_uint16_t GPA;
     rt_uint16_t GPB;
     rt_uint16_t GPC;
-    
+    // Phase offset
     rt_uint16_t PA_PHSL;
     rt_uint16_t PB_PHSL;
     rt_uint16_t PC_PHSL;

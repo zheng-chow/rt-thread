@@ -74,6 +74,10 @@ void zingto_resolving_entry(void* parameter)
     
     rt_device_set_rx_indicate(dev, uart_hook_callback);
     
+    env->user_pitch = SBUS_VALUE_MEDIAN;
+    env->user_roll = SBUS_VALUE_MEDIAN;
+    env->user_yaw = SBUS_VALUE_MEDIAN;
+    
     LOG_I("initialization finish, start!");
 
     while (1)
@@ -121,39 +125,39 @@ void zingto_resolving_entry(void* parameter)
         
         switch(opcode) {
         case 0x00:  // stop
-            env->ch_value[0] = SBUS_VALUE_MEDIAN;
-            env->ch_value[1] = SBUS_VALUE_MEDIAN;
-            env->ch_value[3] = SBUS_VALUE_MEDIAN;
+            env->user_roll = SBUS_VALUE_MEDIAN;
+            env->user_pitch = SBUS_VALUE_MEDIAN;
+            env->user_yaw = SBUS_VALUE_MEDIAN;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
         case 0x0F:  // roll -
-            env->ch_value[0] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->user_roll = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
         case 0x10:  // roll +
-            env->ch_value[0] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->user_roll = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
         case 0x01:  // pitch -
-            env->ch_value[1] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->user_pitch = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
         case 0x02:  // pitch +
-            env->ch_value[1] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->user_pitch = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
         case 0x03:  // yaw -
-            env->ch_value[3] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->user_yaw = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MAXIMUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
         case 0x04:  // yaw +
-            env->ch_value[3] = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
+            env->user_yaw = SBUS_VALUE_MEDIAN + (SBUS_VALUE_MININUM - SBUS_VALUE_MEDIAN) * speedlv / 10.f;
             env->ptz_action = PANTILT_ACTION_NULL;
             ptz_request = RT_TRUE;
             break;
@@ -247,7 +251,7 @@ void zingto_resolving_entry(void* parameter)
                 cam_eval = CAMERA_CMD_PIP_MODE2;
                 env->cam_pip_mode = 2;
             }
-            
+            env->cam_blankvideo = RT_FALSE;
             cam_request = RT_TRUE;
             break;
         case 0x14:  // track prepare.
@@ -327,11 +331,9 @@ void zingto_resolving_entry(void* parameter)
             if (env->sh_ptz != RT_NULL)
             {
                 env->user_incharge = RT_TRUE;
+                env->sbus_incharge = RT_FALSE;
                 rt_sem_release(env->sh_ptz);    // notify the PanTiltZoom.
             }
-        }
-        else {
-            env->user_incharge = RT_FALSE;
         }
         
         if (trck_request == RT_TRUE)

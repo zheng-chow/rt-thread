@@ -209,6 +209,8 @@ static void timer_init(struct rt_hwtimer_device *timer, rt_uint32_t state)
         /* time init */
 #if defined(SOC_SERIES_STM32F2) || defined(SOC_SERIES_STM32F4) || defined(SOC_SERIES_STM32F7)
         if (tim->Instance == TIM9 || tim->Instance == TIM10 || tim->Instance == TIM11)
+#elif defined(SOC_SERIES_STM32H7)
+        if (tim->Instance == TIM14 || tim->Instance == TIM15 || tim->Instance == TIM16 || tim->Instance == TIM17)	
 #elif defined(SOC_SERIES_STM32L4)
         if (tim->Instance == TIM15 || tim->Instance == TIM16 || tim->Instance == TIM17)
 #elif defined(SOC_SERIES_STM32WB)
@@ -339,6 +341,8 @@ static rt_err_t timer_ctrl(rt_hwtimer_t *timer, rt_uint32_t cmd, void *arg)
 
 #if defined(SOC_SERIES_STM32F2) || defined(SOC_SERIES_STM32F4) || defined(SOC_SERIES_STM32F7)
         if (tim->Instance == TIM9 || tim->Instance == TIM10 || tim->Instance == TIM11)
+#elif defined(SOC_SERIES_STM32H7)
+        if (tim->Instance == TIM14 || tim->Instance == TIM15 || tim->Instance == TIM16 || tim->Instance == TIM17)	
 #elif defined(SOC_SERIES_STM32L4)
         if (tim->Instance == TIM15 || tim->Instance == TIM16 || tim->Instance == TIM17)
 #elif defined(SOC_SERIES_STM32WB)
@@ -435,6 +439,37 @@ void TIM5_IRQHandler(void)
     rt_interrupt_leave();
 }
 #endif
+#ifdef BSP_USING_TIM6
+void TIM6_IRQHandler(void)
+{
+    /* enter interrupt */
+    rt_interrupt_enter();
+    HAL_TIM_IRQHandler(&stm32_hwtimer_obj[TIM6_INDEX].tim_handle);
+    /* leave interrupt */
+    rt_interrupt_leave();
+}
+#endif
+#ifdef BSP_USING_TIM7
+void TIM7_IRQHandler(void)
+{
+    /* enter interrupt */
+    rt_interrupt_enter();
+    HAL_TIM_IRQHandler(&stm32_hwtimer_obj[TIM7_INDEX].tim_handle);
+    /* leave interrupt */
+    rt_interrupt_leave();
+}
+#endif
+#ifdef BSP_USING_TIM8
+void TIM8_UP_IRQHandler(void)
+{
+    /* enter interrupt */
+    rt_interrupt_enter();
+    HAL_TIM_IRQHandler(&stm32_hwtimer_obj[TIM8_INDEX].tim_handle);
+    /* leave interrupt */
+    rt_interrupt_leave();
+}
+#endif
+
 #ifdef BSP_USING_TIM11
 void TIM1_TRG_COM_TIM11_IRQHandler(void)
 {
@@ -532,6 +567,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (htim->Instance == TIM5)
     {
         rt_device_hwtimer_isr(&stm32_hwtimer_obj[TIM5_INDEX].time_device);
+    }
+#endif
+#ifdef BSP_USING_TIM6
+    if (htim->Instance == TIM6)
+    {
+        rt_device_hwtimer_isr(&stm32_hwtimer_obj[TIM6_INDEX].time_device);
+    }
+#endif
+#ifdef BSP_USING_TIM7
+    if (htim->Instance == TIM7)
+    {
+        rt_device_hwtimer_isr(&stm32_hwtimer_obj[TIM7_INDEX].time_device);
+    }
+#endif
+#ifdef BSP_USING_TIM8
+    if (htim->Instance == TIM8)
+    {
+        rt_device_hwtimer_isr(&stm32_hwtimer_obj[TIM8_INDEX].time_device);
     }
 #endif
 #ifdef BSP_USING_TIM11

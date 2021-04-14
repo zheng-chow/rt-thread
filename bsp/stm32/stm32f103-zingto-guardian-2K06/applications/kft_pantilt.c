@@ -555,6 +555,74 @@ void pantilt_resolving_entry(void* parameter)
                 }
                 // todo.
             }
+            else if (env->user_incharge)
+            {
+                env->user_incharge = RT_FALSE;
+                
+                {
+                    rt_int16_t dval_pitch, dval_yaw, dval_roll = 0;
+                    LOG_D("PANTILT_ACTION_OTHER, %d", env->ptz_action);
+                    
+                    pktsz = sizeof(ptz_serialctrlpkt);
+                    rt_memset(&ctrlpkt, 0x00, pktsz);
+                                
+                    ctrlpkt.HEADER = PANTILT_PKT_HEADER;
+
+                    dval_roll = env->user_roll - SBUS_VALUE_MEDIAN;    // roll
+                    
+                    if (abs(dval_roll) < SBUS_VALUE_IGNORE)
+                        dval_roll = 0;
+                    else
+                    {
+                        if (dval_roll < 0)
+                            dval_roll = PANTILT_VALUE_MININUM;
+                        else
+                            dval_roll = PANTILT_VALUE_MAXIMUM;
+                    }
+                    
+                    dval_pitch = env->user_pitch - SBUS_VALUE_MEDIAN;    // pitch
+                    if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
+                        dval_pitch = 0;
+                   
+                    dval_yaw = env->user_yaw - SBUS_VALUE_MEDIAN;    // yaw
+                    if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
+                        dval_yaw = 0;
+                    
+                    // disable roll and yaw.
+                    //dval_roll = 0;
+                    
+                    switch(env->cam_pip_mode)
+                    {
+                        case 1:
+                        case 3:
+                        default:
+                            ctrlpkt.pitch   = dval_pitch * ZOOM2RATIO[env->cam_zoom_pos];
+                            ctrlpkt.yaw     = dval_yaw * ZOOM2RATIO[env->cam_zoom_pos];
+                            break;
+                        case 2:
+                        case 4:
+                            ctrlpkt.pitch   = dval_pitch * IR2RATIO;
+                            ctrlpkt.yaw     = dval_yaw * IR2RATIO;
+                            break;
+                    }
+                    
+                    ctrlpkt.roll = dval_roll;
+                    
+                    if (env->ptz_mode == PANTILT_MODE_HEADFREE)
+                        ctrlpkt.mode = 0x0000;
+                    else if (env->ptz_mode == PANTILT_MODE_HEADLOCK)
+                        ctrlpkt.mode = 0x6400;               
+                    else if (env->ptz_mode == PANTILT_MODE_HEADDOWN)
+                        ctrlpkt.mode = 0x9BFE;
+                    
+                    pantilt_update_checksum(&ctrlpkt);
+                       
+                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
+                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
+                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
+                    
+                }
+            }
             else if (env->sbus_incharge)
             {
                 env->sbus_incharge = RT_FALSE;
@@ -580,16 +648,16 @@ void pantilt_resolving_entry(void* parameter)
                             dval_roll = PANTILT_VALUE_MAXIMUM;
                     }
                     
-                    dval_pitch = env->ch_value[9] - SBUS_VALUE_MEDIAN;    // pitch
+                    dval_pitch = env->ch_value[1] - SBUS_VALUE_MEDIAN;    // pitch
                     if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
                         dval_pitch = 0;
                    
-                    dval_yaw = env->ch_value[10] - SBUS_VALUE_MEDIAN;    // yaw
+                    dval_yaw = env->ch_value[3] - SBUS_VALUE_MEDIAN;    // yaw
                     if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
                         dval_yaw = 0;
                     
                     // disable roll and yaw.
-                    dval_roll = 0;
+                    //dval_roll = 0;
                     
                     switch(env->cam_pip_mode)
                     {
@@ -623,75 +691,6 @@ void pantilt_resolving_entry(void* parameter)
                     
                 }
             }
-            else if (env->user_incharge)
-            {
-                env->user_incharge = RT_FALSE;
-                
-                {
-                    rt_int16_t dval_pitch, dval_yaw, dval_roll = 0;
-                    LOG_D("PANTILT_ACTION_OTHER, %d", env->ptz_action);
-                    
-                    pktsz = sizeof(ptz_serialctrlpkt);
-                    rt_memset(&ctrlpkt, 0x00, pktsz);
-                                
-                    ctrlpkt.HEADER = PANTILT_PKT_HEADER;
-
-                    dval_roll = env->ch_value[0] - SBUS_VALUE_MEDIAN;    // roll
-                    
-                    if (abs(dval_roll) < SBUS_VALUE_IGNORE)
-                        dval_roll = 0;
-                    else
-                    {
-                        if (dval_roll < 0)
-                            dval_roll = PANTILT_VALUE_MININUM;
-                        else
-                            dval_roll = PANTILT_VALUE_MAXIMUM;
-                    }
-                    
-                    dval_pitch = env->ch_value[9] - SBUS_VALUE_MEDIAN;    // pitch
-                    if (abs(dval_pitch) < SBUS_VALUE_IGNORE)
-                        dval_pitch = 0;
-                   
-                    dval_yaw = env->ch_value[10] - SBUS_VALUE_MEDIAN;    // yaw
-                    if (abs(dval_yaw) < SBUS_VALUE_IGNORE)
-                        dval_yaw = 0;
-                    
-                    // disable roll and yaw.
-                    dval_roll = 0;
-                    
-                    switch(env->cam_pip_mode)
-                    {
-                        case 1:
-                        case 3:
-                        default:
-                            ctrlpkt.pitch   = dval_pitch * ZOOM2RATIO[env->cam_zoom_pos];
-                            ctrlpkt.yaw     = dval_yaw * ZOOM2RATIO[env->cam_zoom_pos];
-                            break;
-                        case 2:
-                        case 4:
-                            ctrlpkt.pitch   = dval_pitch * IR2RATIO;
-                            ctrlpkt.yaw     = dval_yaw * IR2RATIO;
-                            break;
-                    }
-                    
-                    ctrlpkt.roll = dval_roll;
-                    
-                    if (env->ptz_mode == PANTILT_MODE_HEADFREE)
-                        ctrlpkt.mode = 0x0000;
-                    else if (env->ptz_mode == PANTILT_MODE_HEADLOCK)
-                        ctrlpkt.mode = 0x6400;               
-                    else if (env->ptz_mode == PANTILT_MODE_HEADDOWN)
-                        ctrlpkt.mode = 0x9BFE;
-                    
-                    pantilt_update_checksum(&ctrlpkt);
-                       
-                    pbuf = rt_mp_alloc(mempool, RT_WAITING_FOREVER);
-                    rt_memcpy(pbuf, &ctrlpkt, pktsz);
-                    rt_mb_send(mailbox, (rt_ubase_t)pbuf);
-                    
-                }
-            }
-            
         }
     }
     // never be here.

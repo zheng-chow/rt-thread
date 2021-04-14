@@ -1,0 +1,26 @@
+#ifndef __APP_SERVER__
+#define __APP_SERVER__
+
+#define CTRL_SERVER_PORT        32321
+#define CTRL_CMD_MAX            128
+#define CTRL_CMD_PARAM_MAX      10
+
+#define CTRL_CMD_HEADER         "RWS,"
+#define CTRL_CMD_TAILER         "\n"
+
+#define CTRL_RET_SUCCESS        "OK"
+#define CTRL_RET_FAILED         "ERROR"
+
+#define CTRL_CMD_KEEP_POSITION  "SET_POSITION"
+#define CTRL_CMD_KEEP_EULAR     "SET_EULAR"
+#define CTRL_CMD_SET_MODE       "SET_MODE"
+#define CTRL_CMD_KEEP_SPEED     "SET_SPEED"
+
+#define CTRL_CMD_SET_MODE_CURRENT_POSITION  "LOCK"
+#define CTRL_CMD_SET_MODE_CURRENT_EULAR     "FREE"
+
+#define CTRL_CMD_TRIGGER_LOKER          "SET_LOCKER"
+#define CTRL_CMD_TRIGGER_SHOOT          "SHOOT"
+#define CTRL_CMD_TRIGGER_LOCKER_STATE   "LOCKER_STATE"
+
+#endif

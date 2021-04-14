@@ -26,6 +26,9 @@
 #include <shell.h>
 #endif
 
+#include "dfs_fs.h"
+#include "dfs_posix.h"
+
 #define DBG_ENABLE
 #define DBG_SECTION_NAME                    "fota"
 
@@ -86,7 +89,7 @@
 #endif
 
 #ifndef RT_FOTA_SIGNAL_LED_PIN
-#define RT_FOTA_SIGNAL_LED_PIN				0       //PA0
+#define RT_FOTA_SIGNAL_LED_PIN				42       //PC10
 #endif
 
 #ifndef RT_FOTA_UPDATE_KEY_PIN
@@ -172,7 +175,7 @@ static void rt_fota_signal_led_init(void)
     led_start(signal_led);
 
 	rt_thread_t tid;
-	tid = rt_thread_create("sig_led", rt_fota_signal_led_entry, RT_NULL, RT_FOTA_SIGNAL_LED_THREAD_STACK_SIZE, RT_FOTA_SIGNAL_LED_THREAD_PRIORITY, 10);
+	tid = rt_thread_create("sig_led", rt_fota_signal_led_entry, RT_NULL, RT_FOTA_SIGNAL_LED_THREAD_STACK_SIZE, RT_FOTA_SIGNAL_LED_THREAD_PRIORITY, 20);
 	if (tid)
 		rt_thread_startup(tid);
 }
@@ -1032,13 +1035,13 @@ void rt_fota_thread_entry(void *arg)
     }
 	else
 	{
-		LOG_I("Shell device config failed.");
+		LOG_W("Shell device config failed.");
 	}
 
 	/* Firmware partition verify */
-	fota_err = rt_fota_part_fw_verify(RT_FOTA_FM_PART_NAME);
+	fota_err = rt_fota_part_fw_verify(RT_FOTA_FW_PART_NAME);
 	if (fota_err != RT_FOTA_NO_ERR)
-		goto __exit_boot_entry;
+		goto __exit_warning_entry;
 
 	/* Check upgrade status */
 	if (rt_fota_check_upgrade() <= 0)
@@ -1048,12 +1051,12 @@ void rt_fota_thread_entry(void *arg)
 	rt_fota_signal_led_mode(led_upgrade_mode);
 
 	/* Implement upgrade, copy firmware partition to app partition */
-	fota_err = rt_fota_upgrade(RT_FOTA_FM_PART_NAME);
+	fota_err = rt_fota_upgrade(RT_FOTA_FW_PART_NAME);
 	if (fota_err != RT_FOTA_NO_ERR)
 		goto __exit_boot_entry;
 
 	/* Update new application verison in RBL file of firmware partition */
-	fota_err = rt_fota_copy_version(RT_FOTA_FM_PART_NAME);	
+	fota_err = rt_fota_copy_version(RT_FOTA_FW_PART_NAME);	
 	if (fota_err != RT_FOTA_NO_ERR)
 		goto __exit_boot_entry;
 
@@ -1061,20 +1064,29 @@ __exit_boot_entry:
 	/* Implement application */
 	rt_fota_start_application();
 
-__exit_default_entry:
+__exit_warning_entry:
 	/* Implement upgrade, copy default partition to app partition */
-	if (rt_fota_part_fw_verify(RT_FOTA_DF_PART_NAME) == RT_FOTA_NO_ERR)
-	{
-		if (rt_fota_upgrade(RT_FOTA_DF_PART_NAME) == RT_FOTA_NO_ERR)
-		{		
-			rt_fota_start_application();
-		}
-	}
-	LOG_I("Boot application failed, entry shell mode.");
-	
+	LOG_W("Boot application failed, entry shell mode.");
+    
 __exit_shell_entry:	
 	/* enter to shell mode */
 	rt_fota_signal_led_mode(led_shell_mode);
+    /* create config with fal */
+    struct rt_device *flash_dev = fal_mtd_nor_device_create("config");
+    if (flash_dev != NULL) {
+        LOG_I("config partition create success!");
+        /* mount config */
+        if (dfs_mount(flash_dev->parent.name, "/", "lfs", 0, 0) == 0) {
+            LOG_I("Filesystem initialized!");
+        }
+        else {
+            LOG_W("Failed to initialize filesystem!");
+        }
+    }
+    else {
+        LOG_W("config partition create failed!");
+    }
+
 	/* Implement shell */
 	finsh_system_init();
 }
@@ -1083,7 +1095,7 @@ void rt_fota_init(void)
 {
 	rt_thread_t tid;
 
-	tid = rt_thread_create("rt-boot", rt_fota_thread_entry, RT_NULL, RT_FOTA_THREAD_STACK_SIZE, RT_FOTA_THREAD_PRIORITY, 10);
+	tid = rt_thread_create("zboot", rt_fota_thread_entry, RT_NULL, RT_FOTA_THREAD_STACK_SIZE, 15, 10); //RT_FOTA_THREAD_PRIORITY
 	if (tid != RT_NULL)
 	{
 		rt_thread_startup(tid);
@@ -1099,8 +1111,8 @@ void rt_fota_info(rt_uint8_t argc, char **argv)
 	char put_buf[24];
 	char part_name[2][FAL_DEV_NAME_MAX] = 
     {
-        {RT_FOTA_FM_PART_NAME}, 
-        {RT_FOTA_DF_PART_NAME}
+        {RT_FOTA_FW_PART_NAME}, 
+        {RT_FOTA_CFG_PART_NAME}
     };
 		
 	const char* help_info[] =
@@ -1285,6 +1297,8 @@ void rt_fota_info(rt_uint8_t argc, char **argv)
 	        }
 	        rt_kprintf("\n");
 		}
+
+		memcpy(sobj, osRtxMemoryAlloc (AppMallocAXISRAM,sizeof (OS_MUTEX)£¬O), sizeof(FS_SYNC_t));
     }
 }
 /**

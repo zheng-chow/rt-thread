@@ -104,12 +104,12 @@ void pid_update1(PID_t* pid)
 		float err = pid->targValue - pid->measValue;
 		 if(fabs(err) < 0.05f)
 			 err = 0;
-		 //+²âÊÔ
+		 //+ï¿½ï¿½ï¿½ï¿½
 		 if(fabs(err) < 5)
 			 scale = 1.3f;
-		 //-²âÊÔ
+		 //-ï¿½ï¿½ï¿½ï¿½
 		pid->accErr += err;
-		if (pid->accErrThrd != 0) {//»ý·ÖÏÞ·ù
+		if (pid->accErrThrd != 0) {//ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½
 			if(pid->accErr > pid->accErrThrd/scale)
 				pid->accErr = pid->accErrThrd/scale;
 			else if (pid->accErr < -pid->accErrThrd/scale)
@@ -118,7 +118,7 @@ void pid_update1(PID_t* pid)
 		pid->resValue = pid->Kp * err + pid->Ki * pid->accErr + pid->Kd * (err - pid->lastErr);
 		pid->lastErr = err;
 		pid->resValue *= scale;
-		if (pid->resThrd != 0) {//Êä³öÏÞ·ù
+		if (pid->resThrd != 0) {//ï¿½ï¿½ï¿½ï¿½Þ·ï¿½
 			if(pid->resValue > pid->resThrd)
 				pid->resValue = pid->resThrd;
 			else if (pid->resValue < -pid->resThrd)
@@ -136,11 +136,11 @@ void pid_update3(PID_t* pid)
 		pid->accErr += err;
 		pid->resValue = pid->Kp * err;
 		if (pid->resThrd != 0){
-			//´æÔÚÊä³öÏÞ·ù
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½
 			if ((pid->resValue >= pid->resThrd) || (pid->resValue <= -pid->resThrd))
 				pid->accErr = 0;	
 		}		 
-		if (pid->accErrThrd != 0) {//»ý·ÖÏÞ·ù
+		if (pid->accErrThrd != 0) {//ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½
 			if(pid->accErr > pid->accErrThrd)
 				pid->accErr = pid->accErrThrd;
 			else if (pid->accErr < -pid->accErrThrd)
@@ -148,7 +148,7 @@ void pid_update3(PID_t* pid)
 		}		
 		pid->resValue += pid->Ki * pid->accErr + pid->Kd * (err - pid->lastErr);
 		pid->lastErr = err;
-		if (pid->resThrd != 0) {//Êä³öÏÞ·ù
+		if (pid->resThrd != 0) {//ï¿½ï¿½ï¿½ï¿½Þ·ï¿½
 			if(pid->resValue > pid->resThrd)
 				pid->resValue = pid->resThrd;
 			else if (pid->resValue < -pid->resThrd)
@@ -168,7 +168,7 @@ void pid_update2(PID_t* pid)
 		pid->lastLastErr = pid->lastErr;
 		pid->lastErr = err;
 		
-		if (pid->resThrd != 0) {//Êä³öÏÞ·ù
+		if (pid->resThrd != 0) {//ï¿½ï¿½ï¿½ï¿½Þ·ï¿½
 			if(pid->resValue > pid->resThrd)
 				pid->resValue = pid->resThrd;
 			else if (pid->resValue < -pid->resThrd)

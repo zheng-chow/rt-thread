@@ -13,6 +13,7 @@
 #include "mqtt_client.h"
 #include "cJSON.h"
 #include "rn8302b.h"
+#include <arpa/inet.h>
 /**
  * MQTT URI farmat:
  * domain mode
@@ -161,13 +162,27 @@ static void jc_mqtt_client_entry(void* parameter)
                     // type
                     pdch = cJSON_GetObjectItem(node, "type")->valuestring;
                     cJSON_AddItemToObject(re_node, "type", cJSON_CreateString(pdch));
-                    // value
-                    pdch = cJSON_GetObjectItem(node, "value")->valuestring;
-                    cJSON_AddItemToObject(re_node, "value", cJSON_CreateString(pdch));                
                     
-                    LOG_W("jc write is undo now!");
-                    rt_device_write(jcdev, reg.addr, regbuf, reg.size);
-                    
+                    if (rt_strcmp("hex", pdch) == 0) {
+                        rt_uint32_t hex;
+                        
+                        pdch = cJSON_GetObjectItem(node, "value")->valuestring;
+                        cJSON_AddItemToObject(re_node, "value", cJSON_CreateString(pdch));     
+                        sscanf(pdch, "0x%08X", &hex);
+                        LOG_I("jc write %x, %x, %d", reg.addr, hex, reg.size);
+
+                        do{
+                            rt_uint8_t movebit = 32 - reg.size*8;
+                            hex = htonl(hex << movebit);
+                        }while(0);      
+                        rt_device_write(jcdev, reg.addr, &hex, reg.size);
+                    }
+                    else {
+                        LOG_W("jc write is only support hex now!");
+                        // value
+                        pdch = cJSON_GetObjectItem(node, "value")->valuestring;
+                        cJSON_AddItemToObject(re_node, "value", cJSON_CreateString(pdch));     
+                    }
                 }
                 else {
                     cJSON_AddItemToObject(re_node, "appendix", cJSON_CreateString("failure"));
@@ -228,12 +243,13 @@ static void jc_mqtt_client_entry(void* parameter)
         cJSON_AddItemToObject(re_root, "body", re_body);
         
         pdch = cJSON_PrintUnformatted(re_root);
-
-        paho_mqtt_publish(&client, QOS1, MQTT_CONFIG.PubTopic, (void *)pdch, rt_strlen(pdch));
-
-        if(pdch != RT_NULL) {
+        if (pdch != RT_NULL) {
+            paho_mqtt_publish(&client, QOS0, MQTT_CONFIG.PubTopic, (void *)pdch, rt_strlen(pdch));
             rt_free(pdch);
         }
+        else
+            LOG_W("cJSON_Print failed!");
+
         cJSON_Delete(re_root);
         cJSON_Delete(root);
     }
@@ -303,6 +319,8 @@ static void mqtt_offline_callback(mqtt_client *c)
 
 static int mqtt_start(int argc, char **argv)
 {
+    rt_thread_delay(RT_TICK_PER_SECOND * 5);
+    
     /* init condata param by using MQTTPacket_connectData_initializer */
     MQTTPacket_connectData condata = MQTTPacket_connectData_initializer;
     static char cid[20] = { 0 };
@@ -389,7 +407,7 @@ static int mqtt_start(int argc, char **argv)
     }
     
     /* run mqtt client */
-    paho_mqtt_start(&client, 8196, 20);
+    paho_mqtt_start(&client, 8 * 1024, 14);
     is_started = 1;
     
     /* start jc service */
@@ -400,7 +418,7 @@ static int mqtt_start(int argc, char **argv)
         jc_mbox = rt_mb_create(JC_MAILBOX_NAME, 10, RT_IPC_FLAG_FIFO);
         RT_ASSERT(jc_mbox != RT_NULL);
         
-        jc_thrd = rt_thread_create(JC_THREAD_NAME, jc_mqtt_client_entry, 0, 4096, 13, 10);
+        jc_thrd = rt_thread_create(JC_THREAD_NAME, jc_mqtt_client_entry, 0, 4 * 1024, 13, 10);
         RT_ASSERT(jc_thrd != RT_NULL);
         rt_thread_startup(jc_thrd);
         
@@ -493,12 +511,12 @@ rt_err_t load_mqtt_config(void)
 
 int mqtt_server_init(void)
 {
-    if (load_mqtt_config() == RT_EOK)
+    if (load_mqtt_config() == RT_EOK) {
         mqtt_start(1, RT_NULL);
-    
+    }
+
     return 0;
 }
-INIT_APP_EXPORT(mqtt_server_init);
 
 static int mqtt_stop(int argc, char **argv)
 {
@@ -516,7 +534,7 @@ static int mqtt_pub(int argc, char **argv)
 {
     char *str = "0123456789012345678901234567890";
     
-    paho_mqtt_publish(&client, QOS1, MQTT_PUBTOPIC, (void *)str, rt_strlen(str));
+    paho_mqtt_publish(&client, QOS0, MQTT_PUBTOPIC, (void *)str, rt_strlen(str));
 
     return 0;
 }

@@ -40,12 +40,19 @@ typedef struct Gyro{
 	float Z;
 }Gyro_t;
 
+typedef struct Mag{
+    float X;
+    float Y;
+    float Z;
+}Mag_t;
+
 typedef struct ImuAHRS{
 	Quaternion_t 	QS;
     Quaternion_t    mirrorQS;
     
 	Gyro_t			gyro;
 	Accel_t			accel;
+    Mag_t           mag;
 	Eular_t			eular;
     
 	float			exInt;
@@ -55,6 +62,8 @@ typedef struct ImuAHRS{
 	float			halfT;
     
     rt_mutex_t      mutex;
+    
+    rt_bool_t       magValid;
 
 }ImuAHRS_t;
 
@@ -68,6 +77,7 @@ void Q_Div(Quaternion_t* qa,Quaternion_t* qb, Quaternion_t* q);
 void Q_ToEularGeneral(Quaternion_t* q, Eular_t* e);
 void Q_ToEular(Quaternion_t* q, Eular_t* e);
 void IMUupdate(ImuAHRS_t* imu);
+void IMUupdateEx(ImuAHRS_t* imu);
 void Q_FromEularGeneral(Eular_t* e, Quaternion_t* q);
 void Q_ToEularGeneral(Quaternion_t* q, Eular_t* e);
 

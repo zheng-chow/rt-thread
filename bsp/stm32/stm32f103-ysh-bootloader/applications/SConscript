@@ -1,0 +1,40 @@
+Import('RTT_ROOT')
+Import('rtconfig')
+from building import *
+
+cwd = GetCurrentDir()
+src = Glob('*.c')
+CPPPATH = [cwd, str(Dir('#'))]
+
+if GetDepend(['CUSTOM_SBUS_DEFAULT']):
+    src += Glob('customized/app_sbus_default.c')
+elif GetDepend(['CUSTOM_SBUS_PUZHI']):
+    src += Glob('customized/app_sbus_puzhi.c')
+elif GetDepend(['CUSTOM_SBUS_PUZHI0911']):
+    src += Glob('customized/app_sbus_puzhi0911.c')
+elif GetDepend(['CUSTOM_SBUS_LIANGZW']):
+    src += Glob('customized/app_sbus_LiangZW.c')
+elif GetDepend(['CUSTOM_SBUS_VOLERS']):
+    src += Glob('customized/app_sbus_Volers.c')
+
+if GetDepend(['CUSTOM_UART_DEFAULT']):
+    src += Glob('customized/app_uart_default.c')
+elif GetDepend(['CUSTOM_UART_PUZHI']):
+    src += Glob('customized/app_uart_puzhi.c')
+elif GetDepend(['CUSTOM_UART_PUZHI0911']):
+    src += Glob('customized/app_uart_puzhi0911.c')
+elif GetDepend(['CUSTOM_UART_LIANGZW']):
+    src += Glob('customized/app_uart_LiangZW.c')
+elif GetDepend(['CUSTOM_UART_VOLERS']):
+    src += Glob('customized/app_uart_Volers.c')
+
+if GetDepend(['CAMERA_MODEL_3521']):
+    src += Glob('customized/kft_camera_3251.c')
+elif GetDepend(['CAMERA_MODEL_HU']):
+    src += Glob('customized/kft_camera_HU.c')
+elif GetDepend(['CAMERA_MODEL_VOLERS']):
+    src += Glob('customized/kft_camera_Volers.c')
+
+group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH)
+
+Return('group')

@@ -319,8 +319,8 @@ const struct jcdev_reg_t RN8302B_REGLIST[] = {
     {0xA001, "ThdPhV_phsB", 4, RT_FALSE, 1.0f, "FLOAT%"},
     {0xA002, "ThdPhV_phsC", 4, RT_FALSE, 1.0f, "FLOAT%"},
     {0xA003, "ThdA_phsA",   4, RT_FALSE, 1.0f, "FLOAT%"},
-    {0xA004, "ThdB_phsB",   4, RT_FALSE, 1.0f, "FLOAT%"},
-    {0xA005, "ThdB_phsC",   4, RT_FALSE, 1.0f, "FLOAT%"},
+    {0xA004, "ThdA_phsB",   4, RT_FALSE, 1.0f, "FLOAT%"},
+    {0xA005, "ThdA_phsC",   4, RT_FALSE, 1.0f, "FLOAT%"},
     // Virtual Reg, 0xA100, UA Harmonic level.
     {0xA100, "HphV2_phsA",  4, RT_FALSE, 1.0f, "FLOAT"},
     {0xA101, "HphV3_phsA",  4, RT_FALSE, 1.0f, "FLOAT"},
@@ -435,6 +435,20 @@ const struct jcdev_reg_t RN8302B_REGLIST[] = {
     {0xA60F, "HA17_phsC", 4, RT_FALSE, 1.0f, "FLOAT"},
     {0xA610, "HA18_phsC", 4, RT_FALSE, 1.0f, "FLOAT"},
     {0xA611, "HA19_phsC", 4, RT_FALSE, 1.0f, "FLOAT"},
+    // Virtual Reg, 0xB000, Non-violate EMU Vars
+    {0xB000, "NV_WRCYCLE", 4, RT_FALSE, 1.0f, "S32"},
+    {0xB001, "NV_EPA", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB002, "NV_EPB", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB003, "NV_EPC", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB004, "NV_EPT", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB005, "NV_EQA", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB006, "NV_EQB", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB007, "NV_EQC", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB008, "NV_EQT", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB009, "NV_PosEPT", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB00A, "NV_PosEQT", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB00B, "NV_NegEPT", 4, RT_FALSE, 1.0f, "FLOAT"},
+    {0xB00C, "NV_NegEQT", 4, RT_FALSE, 1.0f, "FLOAT"},
 };
 
 const rt_size_t RN8302B_REGCOUNT = sizeof(RN8302B_REGLIST) / sizeof(struct jcdev_reg_t);

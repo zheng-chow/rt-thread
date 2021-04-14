@@ -161,14 +161,23 @@
 /* system packages */
 
 
+/* Micrium: Micrium software products porting for RT-Thread */
+
+
 /* peripheral libraries and drivers */
 
 #define PKG_USING_SENSORS_DRIVERS
+
+/* AI packages */
+
 
 /* miscellaneous packages */
 
 
 /* samples: kernel and components samples */
+
+
+/* games: games run on RT-Thread console */
 
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32F1
@@ -185,9 +194,9 @@
 #define BSP_USING_PWM3_CH3
 #define BSP_USING_UART
 #define BSP_USING_UART1
-#define BSP_UART1_RX_USING_DMA
 #define BSP_USING_SPI
 #define BSP_USING_SPI1
+#define BSP_USING_SPI2
 #define BSP_USING_CAN
 #define BSP_USING_CAN1
 
@@ -196,5 +205,7 @@
 #define BSP_USING_ADIS16334
 #define BSP_USING_ADIS16334_ACCE
 #define BSP_USING_ADIS16334_GYRO
+#define BSP_USING_RM3100
+#define BSP_RM3100_DATA_RATE 100
 
 #endif

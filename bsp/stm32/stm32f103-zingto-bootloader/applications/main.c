@@ -51,7 +51,7 @@ void rt_fota_print_log(void)
 {   
     LOG_RAW("%s\n", zingto_logo_buf);    
 	LOG_RAW("2016 - 2019 Copyright by Radiation @ warfalcon\n");
-	LOG_RAW("Version: %s build %s\n\n", RT_FOTA_SW_VERSION, __DATE__);
+	LOG_RAW("Version: %s build %s\n", RT_FOTA_SW_VERSION, __DATE__);
 }
 
 int main(void)
@@ -61,7 +61,7 @@ int main(void)
 #endif
     
     rt_fota_print_log();
-    
+
     extern void rt_fota_init(void);
     rt_fota_init();
 

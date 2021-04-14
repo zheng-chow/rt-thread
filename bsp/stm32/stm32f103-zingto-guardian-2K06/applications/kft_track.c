@@ -316,6 +316,9 @@ void track_resolving_entry(void* parameter)
             else             
                 zoomf32 = 30.0f * (env->cam_zoom_pos + 1 - 29);     // Optical ZOOM 30X combine Digital ZOOM.
             
+            // special for Korea 10X SKU.
+            zoomf32 /= 3;
+            
 			rt_memcpy(ctrlpkt.__reserved8 + 4, &zoomf32, 4);
             rt_memcpy(&ctrlpkt.__reserved5, &env->ptz_yaw, sizeof(float));
 			rt_memcpy(ctrlpkt.__reserved8, &env->ptz_pitch, sizeof(float));           

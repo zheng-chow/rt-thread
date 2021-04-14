@@ -31,6 +31,7 @@ extern const rt_size_t RN8302B_REGCOUNT;
 static struct rt_spi_device     *jc_spi_dev = RT_NULL;
 static struct jcdev_stdef_t     _jc_std_cfg = {0};
 static struct jcdev_harmonic_t  _jc_harmonic = {0};
+static struct jcdev_energy_t    _jc_energy = {0};
 
 static float *sin_tab;
 static float *cos_tab;
@@ -356,7 +357,7 @@ static void _jcdev_wave_sample(void)
         rt_thread_delay( 5 );
         _jcdev_access_reg("WSAVECON", buff);
         if (buff[0] == 0x80) {
-            LOG_I("wave sample finish!");
+            LOG_D("wave sample finish!");
             break;
         }
         LOG_W("wave sampling... 0x%02X", buff[0]);
@@ -545,15 +546,15 @@ static rt_err_t _jcdev_load_config(char *filename)
         return -RT_EIO;
     }
     
-    json = rt_malloc(CONFIG_JSON_SIZE);
+    json = rt_malloc(CONFIG_JSON_MAXSIZE);
     if (json == RT_NULL) {
         LOG_E("malloc buffer for json failed!");
         close(fd);
         return -RT_ENOMEM;
     }
     
-    size = read(fd, json, CONFIG_JSON_SIZE);
-    if (size == CONFIG_JSON_SIZE)
+    size = read(fd, json, CONFIG_JSON_MAXSIZE);
+    if (size == CONFIG_JSON_MAXSIZE)
         LOG_W("json buffer is full!");
     
     close(fd);
@@ -566,42 +567,83 @@ static rt_err_t _jcdev_load_config(char *filename)
         cJSON_Delete(root);
         return -RT_EIO;
     }
-    
+
+    if (cJSON_GetObjectItem(root, "HFConst") == RT_NULL) goto exit;    
     item = cJSON_GetObjectItem(root, "HFConst")->valuestring;
     sscanf(item, "0x%04X", &hex);
     _jc_std_cfg.HFConst = hex;
     LOG_I("load from config, HFConst = 0x%04X", _jc_std_cfg.HFConst);
-    
+
+    if (cJSON_GetObjectItem(root, "GSUA") == RT_NULL) goto exit;
     item = cJSON_GetObjectItem(root, "GSUA")->valuestring;
     sscanf(item, "0x%04X", &hex);
     _jc_std_cfg.GSUA = hex;
-    
+    LOG_I("load from config, GSUA = 0x%04X", _jc_std_cfg.GSUA);
+
+    if (cJSON_GetObjectItem(root, "GSUB") == RT_NULL) goto exit;
     item = cJSON_GetObjectItem(root, "GSUB")->valuestring;
     sscanf(item, "0x%04X", &hex);
     _jc_std_cfg.GSUB = hex;
     
+    if (cJSON_GetObjectItem(root, "GSUC") == RT_NULL) goto exit;
     item = cJSON_GetObjectItem(root, "GSUC")->valuestring;
     sscanf(item, "0x%04X", &hex);
     _jc_std_cfg.GSUC = hex;
     
+    if (cJSON_GetObjectItem(root, "GSIA") == RT_NULL) goto exit;
     item = cJSON_GetObjectItem(root, "GSIA")->valuestring;
     sscanf(item, "0x%04X", &hex);
     _jc_std_cfg.GSIA = hex;
     
+    if (cJSON_GetObjectItem(root, "GSIB") == RT_NULL) goto exit;
     item = cJSON_GetObjectItem(root, "GSIB")->valuestring;
     sscanf(item, "0x%04X", &hex);
     _jc_std_cfg.GSIB = hex;
     
+    if (cJSON_GetObjectItem(root, "GSIC") == RT_NULL) goto exit;
     item = cJSON_GetObjectItem(root, "GSIC")->valuestring;
     sscanf(item, "0x%04X", &hex);
     _jc_std_cfg.GSIC = hex;
     
+    if (cJSON_GetObjectItem(root, "GSIN") == RT_NULL) goto exit;
     item = cJSON_GetObjectItem(root, "GSIN")->valuestring;
     sscanf(item, "0x%04X", &hex);
     _jc_std_cfg.GSIN = hex;
     
-    LOG_I("load from %s", filename);
+    if (cJSON_GetObjectItem(root, "PA_PHSL") == RT_NULL) goto exit;
+    item = cJSON_GetObjectItem(root, "PA_PHSL")->valuestring;
+    sscanf(item, "0x%04X", &hex);
+    _jc_std_cfg.PA_PHSL = hex;
+    LOG_I("load from config, PA_PHSL = 0x%04X", _jc_std_cfg.PA_PHSL);
+
+    if (cJSON_GetObjectItem(root, "QA_PHSL") == RT_NULL) goto exit;
+    item = cJSON_GetObjectItem(root, "QA_PHSL")->valuestring;
+    sscanf(item, "0x%04X", &hex);
+    _jc_std_cfg.QA_PHSL = hex;
+
+    if (cJSON_GetObjectItem(root, "PB_PHSL") == RT_NULL) goto exit;
+    item = cJSON_GetObjectItem(root, "PB_PHSL")->valuestring;
+    sscanf(item, "0x%04X", &hex);
+    _jc_std_cfg.PB_PHSL = hex;
+
+    if (cJSON_GetObjectItem(root, "QB_PHSL") == RT_NULL) goto exit;
+    item = cJSON_GetObjectItem(root, "QB_PHSL")->valuestring;
+    sscanf(item, "0x%04X", &hex);
+    _jc_std_cfg.QB_PHSL = hex;
+
+    if (cJSON_GetObjectItem(root, "PC_PHSL") == RT_NULL) goto exit;
+    item = cJSON_GetObjectItem(root, "PC_PHSL")->valuestring;
+    sscanf(item, "0x%04X", &hex);
+    _jc_std_cfg.PC_PHSL = hex;
     
+    if (cJSON_GetObjectItem(root, "QC_PHSL") == RT_NULL) goto exit;
+    item = cJSON_GetObjectItem(root, "QC_PHSL")->valuestring;
+    sscanf(item, "0x%04X", &hex);
+    _jc_std_cfg.QC_PHSL = hex;
+    
+    LOG_I("load from %s", filename);
+
+exit:    
     cJSON_Delete(root);
     
     return RT_EOK;
@@ -641,6 +683,24 @@ static rt_err_t _jcdev_save_config(char *filename)
     
     rt_snprintf(strbuf, BUFSZ, "0x%04X", _jc_std_cfg.GSIN);
     cJSON_AddItemToObject(root, "GSIN", cJSON_CreateString(strbuf));
+
+    rt_snprintf(strbuf, BUFSZ, "0x%04X", _jc_std_cfg.PA_PHSL);
+    cJSON_AddItemToObject(root, "PA_PHSL", cJSON_CreateString(strbuf));
+    
+    rt_snprintf(strbuf, BUFSZ, "0x%04X", _jc_std_cfg.QA_PHSL);
+    cJSON_AddItemToObject(root, "QA_PHSL", cJSON_CreateString(strbuf));
+    
+    rt_snprintf(strbuf, BUFSZ, "0x%04X", _jc_std_cfg.PB_PHSL);
+    cJSON_AddItemToObject(root, "PB_PHSL", cJSON_CreateString(strbuf));
+    
+    rt_snprintf(strbuf, BUFSZ, "0x%04X", _jc_std_cfg.QB_PHSL);
+    cJSON_AddItemToObject(root, "QB_PHSL", cJSON_CreateString(strbuf));
+    
+    rt_snprintf(strbuf, BUFSZ, "0x%04X", _jc_std_cfg.PC_PHSL);
+    cJSON_AddItemToObject(root, "PC_PHSL", cJSON_CreateString(strbuf));
+    
+    rt_snprintf(strbuf, BUFSZ, "0x%04X", _jc_std_cfg.QC_PHSL);
+    cJSON_AddItemToObject(root, "QC_PHSL", cJSON_CreateString(strbuf));
     
     json = cJSON_Print(root);
     
@@ -658,7 +718,7 @@ static rt_err_t _jcdev_save_config(char *filename)
     rt_free(json);
     cJSON_Delete(root);
     
-    LOG_I("save to %s", filename);
+    LOG_D("save to %s", filename);
     
     return RT_EOK;
 }
@@ -706,83 +766,83 @@ rt_err_t jcdev_device_init(rt_device_t dev)
     _jcdev_config_reg("HFConst2", buff);
 
     buff[0] = _jc_std_cfg.GSUA / 256;
-    buff[1] = _jc_std_cfg.GSUA & 256;
+    buff[1] = _jc_std_cfg.GSUA % 256;
     _jcdev_config_reg("GSUA", buff);  // write UA Gain value.
 
     buff[0] = _jc_std_cfg.GSUB / 256;
-    buff[1] = _jc_std_cfg.GSUB & 256;
+    buff[1] = _jc_std_cfg.GSUB % 256;
     _jcdev_config_reg("GSUB", buff);  // write UB Gain value.
 
     buff[0] = _jc_std_cfg.GSUC / 256;
-    buff[1] = _jc_std_cfg.GSUC & 256;
+    buff[1] = _jc_std_cfg.GSUC % 256;
     _jcdev_config_reg("GSUC", buff);  // write UC Gain value.
     
     buff[0] = _jc_std_cfg.GSIA / 256;
-    buff[1] = _jc_std_cfg.GSIA & 256;
+    buff[1] = _jc_std_cfg.GSIA % 256;
     _jcdev_config_reg("GSIA", buff);  // write IA Gain value.
 
     buff[0] = _jc_std_cfg.GSIB / 256;
-    buff[1] = _jc_std_cfg.GSIB & 256;
+    buff[1] = _jc_std_cfg.GSIB % 256;
     _jcdev_config_reg("GSIB", buff);  // write IB Gain value.
 
     buff[0] = _jc_std_cfg.GSIC / 256;
-    buff[1] = _jc_std_cfg.GSIC & 256;
+    buff[1] = _jc_std_cfg.GSIC % 256;
     _jcdev_config_reg("GSIC", buff);  // write IC Gain value.
     
     buff[0] = _jc_std_cfg.GSIN / 256;
-    buff[1] = _jc_std_cfg.GSIN & 256;
+    buff[1] = _jc_std_cfg.GSIN % 256;
     _jcdev_config_reg("GSIN", buff);  // write IN Gain value.
     
-    // to be done. PHSIA, PHSIB, PHSIC, PRTH1L, PRTH1H, PRTH2L, PRTH2H
+    // to be done. PRTH1L, PRTH1H, PRTH2L, PRTH2H
 
     buff[0] = _jc_std_cfg.GPA / 256;
-    buff[1] = _jc_std_cfg.GPA & 256;
+    buff[1] = _jc_std_cfg.GPA % 256;
     _jcdev_config_reg("GPA", buff);  // write Active Power Gain value.
 
     buff[0] = _jc_std_cfg.GPB / 256;
-    buff[1] = _jc_std_cfg.GPB & 256;
+    buff[1] = _jc_std_cfg.GPB % 256;
     _jcdev_config_reg("GPB", buff);  // write Active Power Gain value.
     
     buff[0] = _jc_std_cfg.GPC / 256;
-    buff[1] = _jc_std_cfg.GPC & 256;
+    buff[1] = _jc_std_cfg.GPC % 256;
     _jcdev_config_reg("GPC", buff);  // write Active Power Gain value.
     
     buff[0] = _jc_std_cfg.PA_PHSL / 256;
-    buff[1] = _jc_std_cfg.PA_PHSL & 256;
+    buff[1] = _jc_std_cfg.PA_PHSL % 256;
     _jcdev_config_reg("PA_PHSL", buff);  // write Active Power Phase Cali value.
     
     buff[0] = _jc_std_cfg.PB_PHSL / 256;
-    buff[1] = _jc_std_cfg.PB_PHSL & 256;
+    buff[1] = _jc_std_cfg.PB_PHSL % 256;
     _jcdev_config_reg("PB_PHSL", buff);  // write Active Power Phase Cali value.
 
     buff[0] = _jc_std_cfg.PC_PHSL / 256;
-    buff[1] = _jc_std_cfg.PC_PHSL & 256;
+    buff[1] = _jc_std_cfg.PC_PHSL % 256;
     _jcdev_config_reg("PC_PHSL", buff);  // write Active Power Phase Cali value.
 
     buff[0] = _jc_std_cfg.QA_PHSL / 256;
-    buff[1] = _jc_std_cfg.QA_PHSL & 256;
+    buff[1] = _jc_std_cfg.QA_PHSL % 256;
     _jcdev_config_reg("QA_PHSL", buff);   // write Reactive Power Phase Cali value.
 
     buff[0] = _jc_std_cfg.QB_PHSL / 256;
-    buff[1] = _jc_std_cfg.QB_PHSL & 256;
+    buff[1] = _jc_std_cfg.QB_PHSL % 256;
     _jcdev_config_reg("QB_PHSL", buff);   // write Reactive Power Phase Cali value.
 
     buff[0] = _jc_std_cfg.QC_PHSL / 256;
-    buff[1] = _jc_std_cfg.QC_PHSL & 256;
+    buff[1] = _jc_std_cfg.QC_PHSL % 256;
     _jcdev_config_reg("QC_PHSL", buff);   // write Reactive Power Phase Cali value.
     
-    // to be done: GQA, GQB, GQC, GSA, GSB, GSC, PA_OS, PB_PS, PC_OS
+    // to be done: GQA, GQB, GQC, GSA, GSB, GSC, PA_OS, PB_OS, PC_OS
     
     buff[0] = _jc_std_cfg.IA_OS / 256;
-    buff[1] = _jc_std_cfg.IA_OS & 256;
+    buff[1] = _jc_std_cfg.IA_OS % 256;
     _jcdev_config_reg("IA_OS", buff);   // write Current Offset Cali value.
     
     buff[0] = _jc_std_cfg.IB_OS / 256;
-    buff[1] = _jc_std_cfg.IB_OS & 256;
+    buff[1] = _jc_std_cfg.IB_OS % 256;
     _jcdev_config_reg("IB_OS", buff);   // write Current Offset Cali value.
     
     buff[0] = _jc_std_cfg.IC_OS / 256;
-    buff[1] = _jc_std_cfg.IC_OS & 256;
+    buff[1] = _jc_std_cfg.IC_OS % 256;
     _jcdev_config_reg("IC_OS", buff);   // write Current Offset Cali value.
     
     buff[0] = 0x00; buff[1] = 0x00;
@@ -799,8 +859,12 @@ rt_err_t jcdev_device_init(rt_device_t dev)
     buff[0] = 0x04; buff[1] = 0x00; _jcdev_config_reg("LostVoltT", buff);
     buff[0] = 0x00; buff[1] = 0x2C; _jcdev_config_reg("ZXOT", buff);
     buff[0] = 0x04; buff[1] = 0x77; buff[2] = 0x10; _jcdev_config_reg("CFCFG", buff);
-    buff[0] = 0x40; buff[1] = 0x00; buff[2] = 0x00; _jcdev_config_reg("EMUCFG", buff); 
-    buff[0] = 0x10; _jcdev_config_reg("WSAVECON", buff);  
+    /* EMUCFG: control the Energy Measure Unit
+    *  0x780000, read and not clear.
+    *  0x700000, read and clear.
+    */
+    buff[0] = 0x70; buff[1] = 0x00; buff[2] = 0x00; _jcdev_config_reg("EMUCFG", buff);
+    buff[0] = 0x10; _jcdev_config_reg("WSAVECON", buff);
     buff[0] = 0x00; _jcdev_config_reg("MODSEL", buff);
     buff[0] = 0x77; buff[1] = 0x77; buff[2] = 0x77; _jcdev_config_reg("EMUCON", buff);
     buff[0] = 0xDC; _jcdev_config_reg("WREN", buff);
@@ -849,7 +913,23 @@ rt_size_t jcdev_device_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size
             return 1;
         }
     }
+    else if (reg->addr > 0xB000) {
+        if (reg->addr < 0xB010) {
+            rt_uint8_t index = (reg->addr & 0x001F);
+                
+            if (index < (sizeof(struct jcdev_energy_t)/4)) {
+                *(float*)buffer = (float)*((double*)&_jc_energy + index);
+                return 1;
+            }
+            else
+                LOG_W("EMU log out of index, 0x%04X", reg->addr);
+        }
+        else
+            LOG_W("Non-violate Vars out of index, 0x%04X", reg->addr);
+    }
     else {  // Virtual Register Access
+        
+
         
         if (rt_tick_get() - _jc_harmonic.timestamp > RT_TICK_PER_SECOND *5) {
             // Data out of date, sample a new wave then calculate.
@@ -937,8 +1017,9 @@ rt_size_t jcdev_device_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size
             else
                 LOG_W("harmonic array out of index, 0x%04X", reg->addr);
         }
-        else
-            LOG_W("harmonic array out of index, 0x%04X", reg->addr);
+        else{
+             LOG_W("harmonic array out of index, 0x%04X", reg->addr);
+        }
     }
     
     return 1;
@@ -1138,7 +1219,7 @@ rt_err_t jcdev_device_control(rt_device_t dev, int cmd, void *args)
             SV = _raw_to_int(buff, 28);
             err = (float)(SV - Ist) * 1.0f / (float)Ist;
             err = - (err / (1.0f + err));
-            LOG_D("IA: %d, err: %d", SV, (int)(err * 1000000));
+            LOG_W("IA: %d, err: %d.%08d", SV, (rt_int32_t)floor(err), (rt_int32_t)((err - floor(err))*100000000));
             if (err > 0.0f) {
                 _jc_std_cfg.GSIA = (rt_uint16_t)(err * 32768);
             }
@@ -1155,7 +1236,7 @@ rt_err_t jcdev_device_control(rt_device_t dev, int cmd, void *args)
             SV = _raw_to_int(buff, 28);
             err = (float)(SV - Ist) * 1.0f / (float)Ist;
             err = - (err / (1.0f + err));
-            LOG_D("IB: %d, err: %d", SV, (int)(err * 1000000));
+            LOG_W("IB: %d, err: %d.%08d", SV, (rt_int32_t)floor(err), (rt_int32_t)((err - floor(err))*100000000));
             if (err > 0.0f) {
                 _jc_std_cfg.GSIB = (rt_uint16_t)(err * 32768);
             }
@@ -1172,7 +1253,7 @@ rt_err_t jcdev_device_control(rt_device_t dev, int cmd, void *args)
             SV = _raw_to_int(buff, 28);
             err = (float)(SV - Ist) * 1.0f / (float)Ist;
             err = - (err / (1.0f + err));
-            LOG_D("IC: %d, err: %d", SV, (int)(err * 1000000));
+            LOG_W("IC: %d, err: %d.%08d", SV, (rt_int32_t)floor(err), (rt_int32_t)((err - floor(err))*100000000));
             if (err > 0.0f) {
                 _jc_std_cfg.GSIC = (rt_uint16_t)(err * 32768);
             }
@@ -1190,7 +1271,71 @@ rt_err_t jcdev_device_control(rt_device_t dev, int cmd, void *args)
             break;
         }
         case JCDEV_CALI_PHASE_0D5L: {
-            LOG_W("JCDEV_CALI_PHASE_0D5L start!");
+            float err = 0.0f;
+            float lambda = 0.0f;
+            rt_int32_t SV = 0;
+            
+            // calibrate Phase UA
+            LOG_W("PHA Calibrate start!");
+            rt_memset(buff, 0, sizeof(buff));
+            _jcdev_access_reg("PA", buff);
+            SV = _raw_to_int(buff, 32);
+            
+            err = (float)(SV - P05st) * 1.0f / (float)P05st;
+            
+            lambda = -1.0f * err / sqrt(3);
+            
+            if ( lambda < 0) {
+                _jc_std_cfg.PA_PHSL = (rt_uint16_t)(lambda * 32768 + 65536);
+                _jc_std_cfg.QA_PHSL = (rt_uint16_t)(lambda * 32768 + 65536);
+            }
+            else {
+                _jc_std_cfg.PA_PHSL = (rt_uint16_t)(lambda * 32768);
+                _jc_std_cfg.QA_PHSL = (rt_uint16_t)(lambda * 32768);
+            }
+            
+            LOG_I("RESULT: 0x%04X, 0x%04X", _jc_std_cfg.PA_PHSL, _jc_std_cfg.QA_PHSL);
+
+            // calibrate Phase UB
+            LOG_W("PHB Calibrate start!");
+            rt_memset(buff, 0, sizeof(buff));
+            _jcdev_access_reg("PB", buff);
+            SV = _raw_to_int(buff, 32);
+            
+            err = (float)(SV - P05st) * 1.0f / (float)P05st;
+            lambda = -1.0f * (float)err / sqrt(3);
+            
+            if ( lambda < 0) {
+                _jc_std_cfg.PB_PHSL = (rt_uint16_t)(lambda * 32768 + 65536);
+                _jc_std_cfg.QB_PHSL = (rt_uint16_t)(lambda * 32768 + 65536);
+            }
+            else {
+                _jc_std_cfg.PB_PHSL = (rt_uint16_t)(lambda * 32768);
+                _jc_std_cfg.QB_PHSL = (rt_uint16_t)(lambda * 32768);
+            }
+            
+            LOG_I("RESULT: 0x%04X, 0x%04X", _jc_std_cfg.PB_PHSL, _jc_std_cfg.QB_PHSL);
+            
+            // calibrate Phase UC
+            LOG_W("PHC Calibrate start!");
+            rt_memset(buff, 0, sizeof(buff));
+            _jcdev_access_reg("PC", buff);
+            SV = _raw_to_int(buff, 32);
+            
+            err = (float)(SV - P05st) * 1.0f / (float)P05st;
+            lambda = -1.0f * (float)err / sqrt(3);
+            
+            if ( lambda < 0) {
+                _jc_std_cfg.PC_PHSL = (rt_uint16_t)(lambda * 32768 + 65536);
+                _jc_std_cfg.QC_PHSL = (rt_uint16_t)(lambda * 32768 + 65536);
+            }
+            else {
+                _jc_std_cfg.PC_PHSL = (rt_uint16_t)(lambda * 32768);
+                _jc_std_cfg.QC_PHSL = (rt_uint16_t)(lambda * 32768);
+            }
+            
+            LOG_I("RESULT: 0x%04X, 0x%04X", _jc_std_cfg.PC_PHSL, _jc_std_cfg.QC_PHSL);
+
             break;
         }
         case JCDEV_CALI_U_OFFSET: {
@@ -1332,6 +1477,258 @@ rt_err_t jcdev_wave_sample(void)
     return RT_EOK;
 }
 
+static rt_err_t _jcdev_save_EMUlog(struct jcdev_energy_t* dataset)
+{
+    const char *filename = EMULOG_FILENAME;
+    const rt_size_t BUFSZ = 32;
+    cJSON *root;
+    char strbuf[BUFSZ];
+    char *json;
+    int fd = -1;
+    
+    root = cJSON_CreateObject();
+    cJSON_AddItemToObject(root, "WRCYCLE", cJSON_CreateNumber(dataset->WRCYCLE));
+
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->EPA);
+    cJSON_AddItemToObject(root, "EPA", cJSON_CreateString(strbuf));
+
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->EPB);
+    cJSON_AddItemToObject(root, "EPB", cJSON_CreateString(strbuf));
+
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->EPC);
+    cJSON_AddItemToObject(root, "EPC", cJSON_CreateString(strbuf));
+
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->EPT);
+    cJSON_AddItemToObject(root, "EPT", cJSON_CreateString(strbuf));
+    
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->EQA);
+    cJSON_AddItemToObject(root, "EQA", cJSON_CreateString(strbuf));
+    
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->EQB);
+    cJSON_AddItemToObject(root, "EQB", cJSON_CreateString(strbuf));
+
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->EQC);
+    cJSON_AddItemToObject(root, "EQC", cJSON_CreateString(strbuf));
+
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->EQT);
+    cJSON_AddItemToObject(root, "EQT", cJSON_CreateString(strbuf));
+    
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->PosEPT);
+    cJSON_AddItemToObject(root, "PosEPT", cJSON_CreateString(strbuf));
+    
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->PosEQT);
+    cJSON_AddItemToObject(root, "PosEQT", cJSON_CreateString(strbuf));
+
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->NegEPT);
+    cJSON_AddItemToObject(root, "NegEPT", cJSON_CreateString(strbuf));
+
+    snprintf(strbuf, BUFSZ, "%.6f", dataset->NegEQT);
+    cJSON_AddItemToObject(root, "NegEQT", cJSON_CreateString(strbuf));
+
+    json = cJSON_Print(root);
+
+    fd = open(filename, O_WRONLY | O_CREAT, 0);
+    if (fd < 0) {
+        LOG_E("create %s failed!", filename);
+        return -RT_EIO;
+    }
+    
+    write(fd, json, rt_strlen(json));
+    close(fd);
+
+    rt_free(json);
+    cJSON_Delete(root);
+    
+    LOG_D("save to %s", filename);
+
+    return RT_EOK;
+}
+
+static rt_err_t _jcdev_load_EMUlog(struct jcdev_energy_t* dataset)
+{
+    const char *filename = EMULOG_FILENAME;
+    int fd = -1;
+    rt_size_t size;
+    cJSON *root, *item;
+    char *json = RT_NULL;
+    double sv;
+    
+    fd = open(filename, O_RDONLY, 0);
+    if (fd < 0) {
+        LOG_E("read %s failed! maybe there's no file?", filename);
+        close(fd);
+        return -RT_EIO;
+    }
+    
+    json = rt_malloc(EMULOG_JSON_MAXSIZE);
+    if (json == RT_NULL) {
+        LOG_E("malloc buffer for json failed!");
+        close(fd);
+        return -RT_ENOMEM;
+    }
+    
+    size = read(fd, json, EMULOG_JSON_MAXSIZE);
+    if (size == EMULOG_JSON_MAXSIZE)
+        LOG_W("json buffer is full!");
+    close(fd);
+    
+    root = cJSON_Parse(json);
+    rt_free(json);
+    
+    if (root == RT_NULL) {
+        LOG_E("parse json failed.");
+        goto __exit;  
+    }
+    
+    item = cJSON_GetObjectItem(root, "WRCYCLE");
+    if (item != RT_NULL) { dataset->WRCYCLE = item->valueint;}
+    else {LOG_W("%s parse failed!", "WRCYCLE");}
+    
+    item = cJSON_GetObjectItem(root, "EPA");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->EPA = sv;}
+    else {LOG_W("%s parse failed!", "EPA");}
+
+    item = cJSON_GetObjectItem(root, "EPB");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->EPB = sv;}
+    else {LOG_W("%s parse failed!", "EPB");}
+    
+    item = cJSON_GetObjectItem(root, "EPC");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->EPC = sv;}
+    else {LOG_W("%s parse failed!", "EPC");}
+    
+    item = cJSON_GetObjectItem(root, "EPT");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->EPT = sv;}
+    else {LOG_W("%s parse failed!", "EPT");}
+    
+    item = cJSON_GetObjectItem(root, "EQA");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->EQA = sv;}
+    else {LOG_W("%s parse failed!", "EQA");}
+
+    item = cJSON_GetObjectItem(root, "EQB");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->EQB = sv;}
+    else {LOG_W("%s parse failed!", "EQB");}
+    
+    item = cJSON_GetObjectItem(root, "EQC");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->EQC = sv;}
+    else {LOG_W("%s parse failed!", "EQC");}
+    
+    item = cJSON_GetObjectItem(root, "EQT");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->EQT = sv;}
+    else {LOG_W("%s parse failed!", "EQT");}
+    
+    item = cJSON_GetObjectItem(root, "PosEPT");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->PosEPT = sv;}
+    else {LOG_W("%s parse failed!", "PosEPT");}
+
+    item = cJSON_GetObjectItem(root, "PosEQT");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->PosEQT = sv;}
+    else {LOG_W("%s parse failed!", "PosEQT");}
+    
+    item = cJSON_GetObjectItem(root, "NegEPT");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->NegEPT = sv;}
+    else {LOG_W("%s parse failed!", "NegEPT");}
+    
+    item = cJSON_GetObjectItem(root, "NegEQT");
+    if (item != RT_NULL) { sv = atof(item->valuestring); dataset->NegEQT = sv;}
+    else {LOG_W("%s parse failed!", "NegEQT");}
+    
+__exit:
+    cJSON_Delete(root);
+    
+    return RT_EOK;
+}
+static rt_err_t _jcdev_update_EMUlog(struct jcdev_energy_t* dataset)
+{
+    struct jcdev_reg_t reg;
+    rt_uint8_t regbuf[8];
+    rt_err_t retval;
+    
+    dataset->WRCYCLE++;
+    
+    reg.desc = "EPA"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->EPA += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+
+    reg.desc = "EPB"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->EPB += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+
+    reg.desc = "EPC"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->EPC += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+    
+    reg.desc = "EPT"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->EPT += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+
+    reg.desc = "EQA"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->EQA += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+
+    reg.desc = "EQB"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->EQB += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+
+    reg.desc = "EQC"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->EQC += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+    
+    reg.desc = "EQT"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->EQT += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+    
+    reg.desc = "PosEPT"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->PosEPT += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+
+    reg.desc = "PosEQT"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->PosEQT += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+
+    reg.desc = "NegEPT"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->NegEPT += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+    
+    reg.desc = "NegEQT"; retval = jcdev_device_control(RT_NULL, JCDEV_SEARCH_BYNAME, &reg);
+    if (retval == RT_EOK) {_jcdev_reg_read(reg.addr, regbuf, reg.size); dataset->NegEQT += _jcdev_raw_to_float(&reg, regbuf);}
+    else {LOG_W("no %s found", reg.desc);}
+    return RT_EOK;
+}
+
+static void jcdev_thread_EMUlog(void *parameter)
+{
+    const char* filename = EMULOG_FILENAME;
+    int fd = -1;
+    rt_err_t retval;
+    
+    fd = open(filename, O_RDONLY, 0);
+    if (fd < 0) {
+        LOG_E("read %s failed! creating a default.", filename);
+        rt_memset(&_jc_energy, 0, sizeof(struct jcdev_energy_t));
+        retval = _jcdev_save_EMUlog(&_jc_energy);
+        if (retval != RT_EOK) {
+            LOG_E("init %s failed! thread jcdev_thread_EMUlog quit!", filename); return;
+        }
+    }
+    else {
+        close(fd);
+        retval = _jcdev_load_EMUlog(&_jc_energy);
+        if (retval != RT_EOK) {
+            LOG_E("load %s failed! thread jcdev_thread_EMUlog quit!", filename); return;
+        }
+    }
+    
+    while (RT_TRUE) {
+        rt_thread_delay(RT_TICK_PER_SECOND * EMULOG_PREIOD);
+        
+        _jcdev_load_EMUlog(&_jc_energy);
+        
+        _jcdev_update_EMUlog(&_jc_energy);
+        
+        _jcdev_save_EMUlog(&_jc_energy);
+    }
+}
+
 static int rt_hw_spi_jcdevice_init(void)
 {
     rt_hw_spi_device_attach("spi1", "spi10", GPIOG, GPIO_PIN_10);
@@ -1375,6 +1772,11 @@ static int rt_hw_spi_jcdevice_init(void)
     dev->user_data = jc_spi_dev;
     
     LOG_I("jcdev init success");
+    
+    rt_thread_t nv_thrd = rt_thread_create("bgNVEMU", jcdev_thread_EMUlog, 0, 4096, 20, 10);
+    RT_ASSERT(nv_thrd != RT_NULL);
+    rt_thread_startup(nv_thrd);
+    LOG_I("jc EMUlog thread startup.");
     
     return rt_device_register(dev, JC_CHIP_TYPE, RT_DEVICE_FLAG_RDWR);
 }
@@ -1429,28 +1831,28 @@ int jc_cali(int argc, char *argv[])
     if (argc == 2) {
         if (rt_strcmp(argv[1], "setenv") == 0) {
             rt_device_control(jcdev, JCDEV_CALI_ENV_INITIAL, RT_NULL);
-            return 0;
         }
         else if (rt_strcmp(argv[1], "offset") == 0) {
             rt_device_control(jcdev, JCDEV_CALI_DC_OFFSET, RT_NULL);
-            return 0;
+        }
+        else if (rt_strcmp(argv[1], "phase") == 0) {
+            rt_device_control(jcdev, JCDEV_CALI_PHASE_0D5L, RT_NULL);
         }
         else if (rt_strcmp(argv[1], "gain") == 0) { 
             rt_device_control(jcdev, JCDEV_CALI_U_GAIN, RT_NULL);
             rt_device_control(jcdev, JCDEV_CALI_I_GAIN, RT_NULL);
-            return 0;            
         }
         else if (rt_strcmp(argv[1], "save") == 0) {
             rt_device_control(jcdev, JCDEV_SAVE_CONFIG, CONFIG_FILENAME);
-            return 0;
         }
         else if (rt_strcmp(argv[1], "load") == 0) {
             rt_device_control(jcdev, JCDEV_LOAD_CONFIG, CONFIG_FILENAME);
-            return 0;
         }
+        
+        return 0;
     }
     
-    LOG_W("usage: jc_cali setenv/offset/gain");
+    LOG_W("usage: jc_cali setenv/gain/phase/offset/save");
 
     return -1;
 }

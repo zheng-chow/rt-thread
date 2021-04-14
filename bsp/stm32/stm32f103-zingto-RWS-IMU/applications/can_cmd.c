@@ -13,7 +13,7 @@
 #include "AHRSHelper.h"
 
 #define DBG_ENABLE
-#define DBG_LEVEL DBG_LOG //DBG_INFO
+#define DBG_LEVEL DBG_INFO //DBG_INFO
 #define DBG_SECTION_NAME  "app.can"
 #define DBG_COLOR
 #include <rtdbg.h>
@@ -78,16 +78,12 @@ void can_rx_thread_handler(void *args)
     rt_device_set_rx_indicate(can_dev, can_rx_callback);
     
     while(1) {
-//        _can_send_float(can_dev, 'W', 0x01, 1.000f);
-//        LOG_I("send W 1.000f");
-//        rt_thread_delay(RT_TICK_PER_SECOND / 50);
-//        continue;
         
         rt_sem_take(&rx_sem, RT_WAITING_FOREVER);
         rxMsg.hdr = -1;
         rt_device_read(can_dev, 0, &rxMsg, sizeof(rxMsg));
         
-        //LOG_I("%02X %02X %02X %02X", rxMsg.id, rxMsg.data[0], rxMsg.data[1], rxMsg.data[2]);
+        LOG_D("%02X %02X %02X %02X", rxMsg.id, rxMsg.data[0], rxMsg.data[1], rxMsg.data[2]);
         switch(rxMsg.data[0]) {
             case 'A': {
                 float fbuf[3];

@@ -46,6 +46,22 @@ extern void create_sin(void);
 #include <dfs_file.h>
 #include <dfs_posix.h>
 
+#define OTA_APP_START_ADDRESS   0x08100000
+
+/**
+ * Function    ota_app_vtor_reconfig
+ * Description Set Vector Table base location to the start addr of app(RT_APP_PART_ADDR).
+*/
+static int ota_app_vtor_reconfig(void)
+{
+    #define NVIC_VTOR_MASK   0x3FFFFF80
+    /* Set the Vector Table base location by user application firmware definition */
+    SCB->VTOR = OTA_APP_START_ADDRESS & NVIC_VTOR_MASK;
+
+    return 0;
+}
+//INIT_BOARD_EXPORT(ota_app_vtor_reconfig);
+
 static int lan_load_configSets(void)
 {
     const char* FILENAME = "netif.json";
@@ -183,7 +199,7 @@ static void check_extern_sdram(void){//check sdram
 				break;
 			}			
 		}
-		else if(temp<=sval)break;//后面读出的数据一定要比第一次读到的数据大.	 
+		else if(temp<=sval)break;   //后面读出的数据一定要比第一次读到的数据大.	 
 		else if (deta != (temp - sval)){
 				rt_kprintf("SDRAM read S%u 16K error\n",deta);
 				break;
@@ -263,84 +279,10 @@ int main(void)
     rt_hw_exception_install(exception_handle_hook);
 	check_extern_sdram();
     
+    LOG_I("build %s %s", __DATE__, __TIME__);
+    
 #if defined(RT_USING_ADC) && defined(BSP_USING_ADC3)
     check_adc3(6, 10, 20);
-#endif
-
-//#define TEST_FAKE_DATA
-#ifdef  TEST_FAKE_DATA
-#if defined(BSP_ADC_USING_DMA)
-    {
-        rt_device_t adcdma = rt_device_find("adcdma");
- 		static rt_tick_t tick, dtick = 0, ttick = 0;
-        rt_uint32_t cnt = 0;
-#if defined(RT_USING_RUDP)
-        udp_api_handle_t udp_api_hd = udp_api_create(60000, "192.168.3.156", 60002, "udp");
-        rt_thread_delay(RT_TICK_PER_SECOND*10);
-        rt_kprintf("send start\n");
-#endif
-        //rt_uint32_t addrbase = 0xC0000000;
-        //rt_uint32_t datalen = 0xC0000000;
-        //RT_ASSERT(adcdma);
-        if (adcdma){
-            rt_device_open(adcdma, 0);
-            rt_uint32_t offs = 0, offs_bak = 1;
-            tick = rt_tick_get();
-            while (1){//(cnt <= 10){
-                rt_device_control(adcdma, RT_DEVICE_ADC_WAIT_OFFSET, &offs);
-                dtick = rt_tick_get() - tick;
-                tick += dtick;
-                ttick += dtick;
-                cnt++;
-                if (offs == offs_bak)
-                    rt_kprintf("cost %d %u\n", dtick, cnt);
-                RT_ASSERT (offs != offs_bak);
-                offs_bak = offs;
-                
-#if defined(RT_USING_RUDP)
-                if(0 == cnt%10){
-                    udp_api_send(udp_api_hd, (rt_uint8_t*)0xC0000000, 200000 * 6*2);//ADC_BUFF_SZ  1000000
-                }
-#endif
-            }            
-            //rt_thread_delay(RT_TICK_PER_SECOND);
-            rt_device_close(adcdma);
-            rt_kprintf("average: %d ms\n", (ttick * 1000)/cnt/RT_TICK_PER_SECOND);
-#if defined(RT_USING_RUDP)
-           udp_api_delete(&udp_api_hd);            
-#endif
-#endif
-         /*   
-            rt_uint32_t val[2][3]={{0,0,0},{0,0,0}};
-            rt_uint16_t* v = (rt_uint16_t*)0xC0000000;
-            rt_uint16_t err  = 0;
-            for (rt_uint32_t idx = 0; idx < 2; idx++){
-                v = (rt_uint16_t*)(0xC0000000 + (200000*6)*idx);
-                for (rt_uint32_t n = 0; n < 200000; n++, v+=3){                    
-                    val[idx][0] += v[0];
-                    val[idx][1] += v[1];
-                    val[idx][2] += v[2];
-                    if (v[0] >= 0x800){
-                        err = (err > (v[0] - 0x800))?err:(v[0] - 0x800);
-                    }
-                    else{
-                        err = (err > (0x800 - v[0]))?err:(0x800 - v[0]);
-                    }
-                }                
-            }
-            val[0][0] = val[0][0] / 200000;
-            val[0][1] = val[0][1] / 200000;
-            val[0][2] = val[0][2] / 200000;
-            val[1][0] = val[1][0] / 200000;
-            val[1][1] = val[1][1] / 200000;
-            val[1][2] = val[1][2] / 200000;
-            rt_kprintf("max err: %u \n", err);
-            rt_kprintf("signal1: %u %u %u\n", val[0][0], val[0][1], val[0][2]);
-            rt_kprintf("signal2: %u %u %u\n", val[1][0], val[1][1], val[1][2]);*/
-        }
-    }
-    
-    create_sin();
 #endif
 
 #if defined(RT_USING_LWIP)
@@ -354,6 +296,11 @@ int main(void)
     telnet_server();
 #endif
     
+    extern int mqtt_server_init(void);
+    rt_thread_delay(RT_TICK_PER_SECOND * 5);
+    
+    mqtt_server_init();
+    
     while (count++)
     {
         rt_pin_write(BLINK_PIN, PIN_HIGH);
@@ -364,3 +311,11 @@ int main(void)
     
     return RT_EOK;
 }
+
+static int print_uname(int argc, char **argv)
+{
+    rt_kprintf("rt-thread, jc. build: %s %s\n", __DATE__, __TIME__);
+    
+    return RT_EOK;
+}
+MSH_CMD_EXPORT_ALIAS(print_uname, uname, "print info and build time");

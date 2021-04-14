@@ -50,8 +50,8 @@ typedef enum {
 } rt_fota_err_t;
 
 #define RT_FOTA_APP_PART_NAME   "app"
-#define RT_FOTA_FM_PART_NAME    "download"
-#define RT_FOTA_DF_PART_NAME    "factory"
+#define RT_FOTA_FW_PART_NAME    "download"
+#define RT_FOTA_CFG_PART_NAME   "rootfs"
     
 #endif /* _RT_FOTA_H_ */
 

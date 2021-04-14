@@ -590,7 +590,7 @@ HAL_StatusTypeDef HAL_ADC_Init(ADC_HandleTypeDef* hadc)
     /* measurement path bit (TSVREFE).                                        */
     if (READ_BIT(hadc->Instance->CR2, ~(ADC_CR2_ADON | ADC_CR2_DMA |
                                         ADC_CR2_SWSTART | ADC_CR2_JSWSTART |
-                                        ADC_CR2_JEXTTRIG | ADC_CR2_JEXTSEL |
+                                        ADC_CR2_JEXTTRIG |  // ADC_CR2_JEXTSEL | wickkid
                                         ADC_CR2_TSVREFE                     ))
          == tmp_cr2)
     {

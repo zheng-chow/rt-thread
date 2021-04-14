@@ -69,6 +69,7 @@
 #define RT_SERIAL_USING_DMA
 #define RT_SERIAL_RB_BUFSZ 1024
 #define RT_USING_PIN
+#define RT_USING_SPI
 #define RT_USING_WDT
 #define RT_USING_HWCRYPTO
 #define RT_HWCRYPTO_DEFAULT_NAME "hwcryto"
@@ -146,7 +147,13 @@
 /* system packages */
 
 
+/* Micrium: Micrium software products porting for RT-Thread */
+
+
 /* peripheral libraries and drivers */
+
+
+/* AI packages */
 
 
 /* miscellaneous packages */
@@ -154,22 +161,29 @@
 
 /* samples: kernel and components samples */
 
+
+/* games: games run on RT-Thread console */
+
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32F1
 
-/* BSP Customize Config */
+/* Product Configurations */
 
 #define SOC_STM32F103xE
 
 /* Product Customize Options */
 
-#define CUSTOM_SBUS_LIANGZW
-#define CUSTOM_UART_LIANGZW
+#define CUSTOM_SBUS_DEFAULT
+#define CUSTOM_UART_DEFAULT
 #define CAMERA_MODEL_3521
+
+/* Onboard Peripheral Drivers */
+
 
 /* On-chip Peripheral Drivers */
 
 #define BSP_USING_GPIO
+#define BSP_USING_ON_CHIP_FLASH
 #define BSP_USING_UART
 #define BSP_USING_UART1
 #define BSP_UART1_RX_USING_DMA

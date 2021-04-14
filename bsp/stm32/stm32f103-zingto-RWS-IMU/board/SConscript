@@ -8,14 +8,16 @@ cwd = GetCurrentDir()
 
 # add general drivers
 src = Split('''
-sensor_adis/adis16334.c
+sensor_ADI/adis16334.c
+sensor_PNI/rm3100.c
 board.c
 CubeMX_Config/Src/stm32f1xx_hal_msp.c
 ''')
 
 path =  [cwd]
 path += [cwd + '/CubeMX_Config/Inc']
-path += [cwd + '/sensor_adis']
+path += [cwd + '/sensor_ADI']
+path += [cwd + '/sensor_PNI']
 
 startup_path_prefix = SDK_LIB
 

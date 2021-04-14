@@ -335,7 +335,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER, STM32F103xE</Define>
               <Undefine></Undefine>
-              <IncludePath>applications;..\..\..\libcpu\arm\common;..\..\..\libcpu\arm\cortex-m3;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;board;board\CubeMX_Config\Inc;..\libraries\HAL_Drivers;..\libraries\HAL_Drivers\config;..\..\..\components\finsh;.;..\..\..\include;..\..\..\components\libc\compilers\common;..\libraries\STM32F1xx_HAL\CMSIS\Device\ST\STM32F1xx\Include;..\libraries\STM32F1xx_HAL\STM32F1xx_HAL_Driver\Inc;..\libraries\STM32F1xx_HAL\CMSIS\Include;..\..\..\components\utilities\ulog</IncludePath>
+              <IncludePath>applications;..\..\..\libcpu\arm\common;..\..\..\libcpu\arm\cortex-m3;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;board;board\CubeMX_Config\Inc;..\libraries\HAL_Drivers;..\libraries\HAL_Drivers\config;..\..\..\components\finsh;.;..\..\..\include;..\..\..\components\libc\compilers\common;..\libraries\STM32F1xx_HAL\CMSIS\Device\ST\STM32F1xx\Include;..\libraries\STM32F1xx_HAL\STM32F1xx_HAL_Driver\Inc;..\libraries\STM32F1xx_HAL\CMSIS\Include;..\..\..\components\utilities\ulog</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -380,9 +380,44 @@
           <GroupName>Applications</GroupName>
           <Files>
             <File>
+              <FileName>app_abs_encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>applications\app_abs_encoder.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>applications\app_adc.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_can.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>applications\app_can.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_encoder_modbus.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>applications\app_encoder_modbus.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>applications\app_pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_speed.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>applications\app_speed.c</FilePath>
+            </File>
+            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>applications\main.c</FilePath>
+            </File>
+            <File>
+              <FileName>svpwmhelper.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>applications\svpwmhelper.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -425,14 +460,19 @@
               <FilePath>..\..\..\components\drivers\can\can.c</FilePath>
             </File>
             <File>
+              <FileName>hwtimer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\components\drivers\hwtimer\hwtimer.c</FilePath>
+            </File>
+            <File>
               <FileName>pin.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\components\drivers\misc\pin.c</FilePath>
             </File>
             <File>
-              <FileName>rt_drv_pwm.c</FileName>
+              <FileName>adc.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\components\drivers\misc\rt_drv_pwm.c</FilePath>
+              <FilePath>..\..\..\components\drivers\misc\adc.c</FilePath>
             </File>
             <File>
               <FileName>serial.c</FileName>
@@ -490,6 +530,16 @@
               <FilePath>board\CubeMX_Config\Src\stm32f1xx_hal_msp.c</FilePath>
             </File>
             <File>
+              <FileName>drv_foc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>board\drv_foc.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_hall.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>board\drv_hall.c</FilePath>
+            </File>
+            <File>
               <FileName>startup_stm32f103xe.s</FileName>
               <FileType>2</FileType>
               <FilePath>..\libraries\STM32F1xx_HAL\CMSIS\Device\ST\STM32F1xx\Source\Templates\arm\startup_stm32f103xe.s</FilePath>
@@ -505,9 +555,14 @@
               <FilePath>..\libraries\HAL_Drivers\drv_usart.c</FilePath>
             </File>
             <File>
-              <FileName>drv_pwm.c</FileName>
+              <FileName>drv_hwtimer.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\libraries\HAL_Drivers\drv_pwm.c</FilePath>
+              <FilePath>..\libraries\HAL_Drivers\drv_hwtimer.c</FilePath>
+            </File>
+            <File>
+              <FileName>drv_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\libraries\HAL_Drivers\drv_adc.c</FilePath>
             </File>
             <File>
               <FileName>drv_can.c</FileName>
@@ -708,6 +763,16 @@
               <FileName>stm32f1xx_hal_tim_ex.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\libraries\STM32F1xx_HAL\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_tim_ex.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\libraries\STM32F1xx_HAL\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_adc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_adc_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\libraries\STM32F1xx_HAL\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_adc_ex.c</FilePath>
             </File>
           </Files>
         </Group>

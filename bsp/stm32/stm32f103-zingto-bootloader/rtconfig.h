@@ -37,7 +37,7 @@
 #define RT_USING_DEVICE
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 128
-#define RT_CONSOLE_DEVICE_NAME "uart5"
+#define RT_CONSOLE_DEVICE_NAME "uart1"
 #define RT_VER_NUM 0x40003
 #define ARCH_ARM
 #define RT_USING_CPU_FFS
@@ -75,6 +75,11 @@
 
 /* Device virtual file system */
 
+#define RT_USING_DFS
+#define DFS_USING_WORKDIR
+#define DFS_FILESYSTEMS_MAX 2
+#define DFS_FILESYSTEM_TYPES_MAX 2
+#define DFS_FD_MAX 16
 
 /* Device Drivers */
 
@@ -84,6 +89,7 @@
 #define RT_SERIAL_USING_DMA
 #define RT_SERIAL_RB_BUFSZ 1024
 #define RT_USING_PIN
+#define RT_USING_MTD_NOR
 #define RT_USING_WDT
 #define RT_USING_HWCRYPTO
 #define RT_HWCRYPTO_DEFAULT_NAME "hwcryto"
@@ -179,6 +185,17 @@
 #define FAL_PART_HAS_TABLE_CFG
 #define PKG_USING_FAL_V00400
 #define PKG_FAL_VER_NUM 0x00400
+#define PKG_USING_LITTLEFS
+#define PKG_USING_LITTLEFS_V221
+#define LFS_READ_SIZE 256
+#define LFS_PROG_SIZE 256
+#define LFS_BLOCK_SIZE 4096
+#define LFS_CACHE_SIZE 256
+#define LFS_BLOCK_CYCLES 100
+#define LFS_LOOKAHEAD_MAX 128
+
+/* Micrium: Micrium software products porting for RT-Thread */
+
 
 /* peripheral libraries and drivers */
 
@@ -198,6 +215,9 @@
 
 /* samples: kernel and components samples */
 
+
+/* games: games run on RT-Thread console */
+
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32F1
 
@@ -210,6 +230,7 @@
 #define BSP_USING_GPIO
 #define BSP_USING_ON_CHIP_FLASH
 #define BSP_USING_UART
-#define BSP_USING_UART5
+#define BSP_USING_UART1
+#define BSP_UART1_RX_USING_DMA
 
 #endif

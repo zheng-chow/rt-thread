@@ -129,6 +129,7 @@ static int WaitForClient(int nSockServer, int timeout){
 	
 	return select(FD_SETSIZE, &fdRead, NULL, NULL,&tim);
 }
+
 static int AcceptConnector(int nSockServer){
 	int nSocket = -1;
 	struct sockaddr_in 	din = {0};
@@ -205,7 +206,9 @@ ret:
 static void accept_thread_entry(void* parameter){
     rt_uint16_t port = (rt_uint16_t) (rt_uint32_t)parameter;
     RT_ASSERT(RT_NULL != sem_conn);
+    
     while(1){
+        
         int sockIdx = -1;
         for (int n = 0; n < MAX_CLIENT_SZ; n++){
             if (-1 == nSockClient[n]){
@@ -213,6 +216,7 @@ static void accept_thread_entry(void* parameter){
                 break;
             }
         }
+        
         if (sockIdx != -1){
            int sockServer = MakeListener(port); 
            if (sockServer == -1){
@@ -221,7 +225,7 @@ static void accept_thread_entry(void* parameter){
            }
            if (WaitForClient(sockServer, 10000)> 0){
                int sock = AcceptConnector(sockServer);
-               if (sock >=0){
+               if (sock >= 0){
                    nSockClient[sockIdx] = sock;
                    rt_pin_write(CONV_PIN, PIN_HIGH);  
                    rt_kprintf("Accept client， socket = %d\n", sock);
@@ -229,21 +233,11 @@ static void accept_thread_entry(void* parameter){
            }
            closesocket(sockServer);           
            continue;
-           //nSockClient[sockIdx] = AcceptClient(port);
-        }        
+        }
    		rt_sem_take(sem_conn, RT_WAITING_FOREVER);  
-/*        
-        rt_mutex_take(mt_receive, RT_WAITING_FOREVER);  
-        rt_mutex_take(mt_send, RT_WAITING_FOREVER);  
- 		nSockClient = -1;
-		closesocket(sock);
-        rt_mutex_release(mt_send);
-		rt_mutex_release(mt_receive);
-        rt_pin_write(CONV_PIN, PIN_LOW);        
-       	rt_kprintf("Disconnect client\n");*/
-        
    }
 }
+
 static void disconnect_thread_entry(void* parameter){
     rt_uint32_t recved;
     while(1){
@@ -281,40 +275,14 @@ static void disconnect_thread_entry(void* parameter){
     }
 }
 
-/*
-static void accept_thread_entry(void* parameter){
-    rt_uint16_t port = (rt_uint16_t) (rt_uint32_t)parameter;
-    RT_ASSERT(RT_NULL != sem_conn);
-    while(1){
-        int sock = nSockClient;
-        if (-1 == sock){//需要连接
-            nSockClient = AcceptClient(port);
-			if (-1 == nSockClient)
-				rt_thread_delay(RT_TICK_PER_SECOND/100);
-			else
-                rt_pin_write(CONV_PIN, PIN_HIGH);     
-            continue;
-        }
- 		rt_kprintf("Accept client\n");
-   		rt_sem_take(sem_conn, RT_WAITING_FOREVER);     
-        rt_mutex_take(mt_receive, RT_WAITING_FOREVER);  
-        rt_mutex_take(mt_send, RT_WAITING_FOREVER);  
- 		nSockClient = -1;
-		closesocket(sock);
-        rt_mutex_release(mt_send);
-		rt_mutex_release(mt_receive);
-        rt_pin_write(CONV_PIN, PIN_LOW);        
-       	rt_kprintf("Disconnect client\n");
-   }
-}
-*/
 static int get_readable_socket_index(void){
    	fd_set 					fdrd;
 	struct timeval 	        tim;
 	int 					nRet = -1;
     int                     cnt = 0;
+    
 	FD_ZERO(&fdrd);
-    rt_mutex_take(mt_receive,RT_WAITING_FOREVER);
+    rt_mutex_take(mt_receive, RT_WAITING_FOREVER);
     for (int n = 0; n < MAX_CLIENT_SZ; n++){
         if (nSockClient[n] != -1){
             FD_SET(nSockClient[n],&fdrd);  
@@ -334,7 +302,7 @@ static int get_readable_socket_index(void){
                     nRet = n;
                     break;
                 }
-            } 
+            }
         }
         else
             nRet = -1;        
@@ -548,7 +516,7 @@ static void receive_thread_entry(void * parameter){
     while (1){
         int idx = get_readable_socket_index();
         if (idx < 0){
-           	rt_thread_delay(RT_TICK_PER_SECOND/100);
+           	rt_thread_delay(RT_TICK_PER_SECOND / 100);
 			continue;
         }
         int sock = nSockClient[idx];
@@ -560,7 +528,7 @@ static void receive_thread_entry(void * parameter){
 			rt_thread_delay(RT_TICK_PER_SECOND/100);
 			continue;
 		}
-		if (rbytes == 0) continue;    
+		if (rbytes == 0) continue;
       	cmdframe[rbytes] = 0;  
         rbytes = unpackage_frame(cmdframe, items, MAX_FRAME_ITEM_CNT);
         if (0 == rt_strcmp(items[0], FRAME_CMD_START)){

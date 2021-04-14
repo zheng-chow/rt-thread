@@ -82,8 +82,9 @@
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_CAN
 #define RT_CAN_USING_HDR
+#define RT_USING_HWTIMER
 #define RT_USING_PIN
-#define RT_USING_PWM
+#define RT_USING_ADC
 
 /* Using USB */
 
@@ -156,6 +157,9 @@
 /* system packages */
 
 
+/* Micrium: Micrium software products porting for RT-Thread */
+
+
 /* peripheral libraries and drivers */
 
 
@@ -177,13 +181,18 @@
 #define BSP_USING_UART
 #define BSP_USING_UART1
 #define BSP_UART1_RX_USING_DMA
+#define BSP_USING_UART3
+#define BSP_UART3_RX_USING_DMA
+#define BSP_UART3_TX_USING_DMA
 #define BSP_USING_CAN
 #define BSP_USING_CAN1
 #define BSP_USING_PWM
-#define BSP_USING_PWM1
-#define BSP_USING_PWM1_CH1
-#define BSP_USING_PWM1_CH2
-#define BSP_USING_PWM1_CH3
+#define BSP_USING_FOC
+#define BSP_USING_TIM
+#define BSP_USING_TIM5
+#define BSP_USING_TIM6
+#define BSP_USING_TIM7
+#define BSP_USING_TIM8
 
 /* Board extended module Drivers */
 

@@ -53,19 +53,37 @@ menu "On-chip Peripheral Drivers"
                 bool "Enable SPI1 BUS"
                 default n
 
-            config BSP_SPI1_TX_USING_DMA
-                bool "Enable SPI1 TX DMA"
-                depends on BSP_USING_SPI1
+            if BSP_USING_SPI1
+                config BSP_SPI1_TX_USING_DMA
+                    bool "Enable SPI1 TX DMA"
+                    depends on BSP_USING_SPI1
+                    default n
+                    
+                config BSP_SPI1_RX_USING_DMA
+                    bool "Enable SPI1 RX DMA"
+                    depends on BSP_USING_SPI1
+                    select BSP_SPI1_TX_USING_DMA
+                    default n
+            endif
+            
+            config BSP_USING_SPI2
+                bool "Enable SPI2 BUS"
                 default n
-                
-            config BSP_SPI1_RX_USING_DMA
-                bool "Enable SPI1 RX DMA"
-                depends on BSP_USING_SPI1
-                select BSP_SPI1_TX_USING_DMA
-                default n
+
+            if BSP_USING_SPI2
+                config BSP_SPI2_TX_USING_DMA
+                    bool "Enable SPI2 TX DMA"
+                    depends on BSP_USING_SPI2
+                    default n
+                    
+                config BSP_SPI2_RX_USING_DMA
+                    bool "Enable SPI2 RX DMA"
+                    depends on BSP_USING_SPI2
+                    select BSP_SPI2_TX_USING_DMA
+                    default n
+            endif
 
         endif
-
     
     menuconfig BSP_USING_CAN
         bool "Enable CAN"
@@ -82,7 +100,7 @@ endmenu
 menu "Board extended module Drivers"
 
     menuconfig BSP_USING_ADIS16334
-        bool "Enable ADIS16334 IMU"
+        bool "Enable ADIS16334 IMU Sensor"
         default n
         select BSP_USING_SPI
         if BSP_USING_ADIS16334
@@ -94,7 +112,16 @@ menu "Board extended module Drivers"
             bool "using gyroscope in ADIS16334"
             default n
         endif
-        
+
+    menuconfig BSP_USING_RM3100
+        bool "Enable RM3100 GeoMag Sensor"
+        default n
+        select BSP_USING_SPI
+        if BSP_USING_RM3100
+            config BSP_RM3100_DATA_RATE
+            int "data rate(HZ)"
+            default 100
+        endif        
 
 endmenu
 

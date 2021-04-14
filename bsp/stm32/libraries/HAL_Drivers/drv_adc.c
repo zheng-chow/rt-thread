@@ -52,12 +52,7 @@ static rt_err_t stm32_adc_enabled(struct rt_adc_device *device, rt_uint32_t chan
 
     if (enabled)
     {
-<<<<<<< HEAD
-
-#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined(SOC_SERIES_STM32H7)
-=======
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined (SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32H7) || defined (SOC_SERIES_STM32WB)
->>>>>>> upstream/master
         ADC_Enable(stm32_adc_handler);
 #else
         __HAL_ADC_ENABLE(stm32_adc_handler);
@@ -65,13 +60,8 @@ static rt_err_t stm32_adc_enabled(struct rt_adc_device *device, rt_uint32_t chan
     }
     else
     {
-<<<<<<< HEAD
-
-#if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined(SOC_SERIES_STM32H7)
-
-=======
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined (SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32H7) || defined (SOC_SERIES_STM32WB)
->>>>>>> upstream/master
+
         ADC_Disable(stm32_adc_handler);
 #else
         __HAL_ADC_DISABLE(stm32_adc_handler);
@@ -192,14 +182,7 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
 #endif
         return -RT_ERROR;
     }
-<<<<<<< HEAD
-
-#if defined(SOC_SERIES_STM32H7)
-
-=======
-    
 #if defined(SOC_SERIES_STM32MP1) || defined (SOC_SERIES_STM32H7) || defined (SOC_SERIES_STM32WB)
->>>>>>> upstream/master
     ADC_ChanConf.Rank = ADC_REGULAR_RANK_1;
 #else
     ADC_ChanConf.Rank = 1;

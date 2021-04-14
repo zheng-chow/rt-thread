@@ -71,6 +71,43 @@ extern "C" {
 #endif /* TIM5_CONFIG */
 #endif /* BSP_USING_TIM5 */
 
+#ifdef BSP_USING_TIM6
+#ifndef TIM6_CONFIG
+#define TIM6_CONFIG                             \
+    {                                           \
+       .tim_handle.Instance     = TIM6,         \
+       .tim_irqn                = TIM6_IRQn,    \
+       .name                    = "timer6",     \
+    }
+#endif /* TIM6_CONFIG */
+#endif /* BSP_USING_TIM6 */
+		
+		
+#ifdef BSP_USING_TIM7
+#ifndef TIM7_CONFIG
+#define TIM7_CONFIG                             \
+    {                                           \
+       .tim_handle.Instance     = TIM7,         \
+       .tim_irqn                = TIM7_IRQn,    \
+       .name                    = "timer7",     \
+    }
+#endif /* TIM7_CONFIG */
+#endif /* BSP_USING_TIM7 */		
+	
+
+
+#ifdef BSP_USING_TIM8
+#ifndef TIM8_CONFIG
+#define TIM8_CONFIG                             \
+    {                                           \
+       .tim_handle.Instance     = TIM8,         \
+       .tim_irqn                = TIM8_UP_IRQn,    \
+       .name                    = "timer8",     \
+    }
+#endif /* TIM7_CONFIG */
+#endif /* BSP_USING_TIM7 */		
+
+		
 #ifdef __cplusplus
 }
 #endif

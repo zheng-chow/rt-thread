@@ -1,0 +1,22 @@
+import rtconfig
+from building import *
+
+cwd     = GetCurrentDir()
+CPPPATH = [cwd, str(Dir('#'))]
+src     = Split("""
+main.c
+app_can.c
+app_configure.c
+app_env.c
+app_sensor.c
+AHRSHelper.c
+app_motor.c
+app_pid.c
+app_server.c
+app_abs_encoder.c
+""")
+
+
+group = DefineGroup('Applications', src, depend = [''], CPPPATH = CPPPATH, CPPDEFINES = ['xBOOT_PROCESSOR'])
+
+Return('group')
