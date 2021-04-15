@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2022, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -19,6 +19,8 @@
 #define LOG_TAG              "drv.pmic"
 #include <drv_log.h>
 
+#define I2C_NAME  "i2c3"
+
 static struct rt_i2c_bus_device *pmic_dev = RT_NULL;
 
 /* i2c read reg */
@@ -27,12 +29,12 @@ static rt_err_t read_reg(struct rt_i2c_bus_device *bus, rt_uint8_t reg, rt_uint8
     struct rt_i2c_msg msg[2] = {0, 0};
 
     RT_ASSERT(bus != RT_NULL);
-    
+
     msg[0].addr  = STPMU1_I2C_ADDRESS;     /* Slave address */
     msg[0].flags = RT_I2C_WR;              /* Write flag */
     msg[0].buf   = &reg;                   /* Slave register address */
     msg[0].len   = 1;                      /* Number of bytes sent */
-        
+
     msg[1].addr  = STPMU1_I2C_ADDRESS;
     msg[1].flags = RT_I2C_RD;
     msg[1].len   = len;
@@ -53,7 +55,7 @@ static rt_err_t write_reg(struct rt_i2c_bus_device *bus, rt_uint8_t reg, rt_uint
     struct rt_i2c_msg msgs;
 
     RT_ASSERT(bus != RT_NULL);
-    
+
     buf[0] = reg; //cmd
     buf[1] = data;
 
@@ -83,7 +85,7 @@ static rt_err_t stpmu1_read_reg(uint8_t register_id)
     {
         Error_Handler();
     }
-    
+
     return result;
 }
 
@@ -91,7 +93,7 @@ static void stpmu1_write_reg(uint8_t register_id, uint8_t value)
 {
     uint32_t status = RT_EOK;
     uint8_t readval = 0;
-    
+
     status = write_reg(pmic_dev, register_id, (rt_uint8_t)value);
 
     /* Check the communication status */
@@ -118,7 +120,7 @@ static uint32_t BSP_PMIC_MspInit(void)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     GPIO_InitStruct.Pin       = GPIO_PIN_0;
     GPIO_InitStruct.Mode      = GPIO_MODE_IT_FALLING;
-    GPIO_InitStruct.Pull      = GPIO_PULLUP; 
+    GPIO_InitStruct.Pull      = GPIO_PULLUP;
     GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.Alternate = 0 ;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -617,7 +619,7 @@ static uint8_t STPMU1_Voltage_Find_Index(PMIC_RegulId_TypeDef id, uint16_t miliv
     uint8_t i;
     for ( i = 0 ; i < regul->voltage_table_size ; i++)
     {
-        if ( regul->voltage_table[i] == milivolts ) 
+        if ( regul->voltage_table[i] == milivolts )
         {
           LOG_D("idx:%d for %dmV\n\r", (int)i, (int)milivolts);
           return i;
@@ -714,7 +716,7 @@ void BSP_PMIC_INTn_Callback(PMIC_IRQn IRQn)
     LOG_I(" Interrupt received\n\r");
 }
 
-void STPMU1_INTn_Callback(PMIC_IRQn IRQn) 
+void STPMU1_INTn_Callback(PMIC_IRQn IRQn)
 {
     BSP_PMIC_INTn_Callback(IRQn);
 }
@@ -796,47 +798,47 @@ static rt_err_t rt_hw_pmic_init_register(void)
     stpmu1_write_reg(BUCK_ICC_TURNOFF_REG, 0x30);
     stpmu1_write_reg(LDO_ICC_TURNOFF_REG, 0x3b);
 
-  /* vddcore */
-  STPMU1_Regulator_Voltage_Set(STPMU1_BUCK1, 1200);
-  STPMU1_Regulator_Enable(STPMU1_BUCK1);
+    /* vddcore */
+    STPMU1_Regulator_Voltage_Set(STPMU1_BUCK1, 1200);
+    STPMU1_Regulator_Enable(STPMU1_BUCK1);
 
-  /* vddddr */
-  STPMU1_Regulator_Voltage_Set(STPMU1_BUCK2, 1350);
-  STPMU1_Regulator_Enable(STPMU1_BUCK2);
+    /* vddddr */
+    STPMU1_Regulator_Voltage_Set(STPMU1_BUCK2, 1350);
+    STPMU1_Regulator_Enable(STPMU1_BUCK2);
 
-  /* vdd */
-  STPMU1_Regulator_Voltage_Set(STPMU1_BUCK3, 3300);
-  STPMU1_Regulator_Enable(STPMU1_BUCK3);
+    /* vdd */
+    STPMU1_Regulator_Voltage_Set(STPMU1_BUCK3, 3300);
+    STPMU1_Regulator_Enable(STPMU1_BUCK3);
 
-  /* 3v3 */
-  STPMU1_Regulator_Voltage_Set(STPMU1_BUCK4, 3300);
-  STPMU1_Regulator_Enable(STPMU1_BUCK4);
+//    /* 3v3 */
+//    STPMU1_Regulator_Voltage_Set(STPMU1_BUCK4, 3300);
+//    STPMU1_Regulator_Enable(STPMU1_BUCK4);
 
-  /* vdda */
-  STPMU1_Regulator_Voltage_Set(STPMU1_LDO1, 2900);
-  STPMU1_Regulator_Enable(STPMU1_LDO1);
+    /* 1v8_audio */
+    STPMU1_Regulator_Voltage_Set(STPMU1_LDO1, 1800);
+    STPMU1_Regulator_Enable(STPMU1_LDO1);
 
-  /* 2v8 */
-  STPMU1_Regulator_Voltage_Set(STPMU1_LDO2, 2800);
-  STPMU1_Regulator_Enable(STPMU1_LDO2);
+    /* vdd_emmc */
+    STPMU1_Regulator_Voltage_Set(STPMU1_LDO2, 2900);
+    STPMU1_Regulator_Enable(STPMU1_LDO2);
 
-  /* vtt_ddr  lod3 mode buck2/2 */
-  STPMU1_Regulator_Voltage_Set(STPMU1_LDO3, 0xFFFF);
-  STPMU1_Regulator_Enable(STPMU1_LDO3);
+    /* vdd1_ddr */
+    STPMU1_Regulator_Voltage_Set(STPMU1_LDO3, 0xFFFF);
+    STPMU1_Regulator_Enable(STPMU1_LDO3);
 
-  /* vdd_usb */
-  STPMU1_Regulator_Voltage_Set(STPMU1_LDO4, 3300);
-  STPMU1_Regulator_Enable(STPMU1_LDO4);
+    /* vdd_usb */
+    STPMU1_Regulator_Voltage_Set(STPMU1_LDO4, 3300);
+    STPMU1_Regulator_Enable(STPMU1_LDO4);
 
-  /* vdd_sd */
-  STPMU1_Regulator_Voltage_Set(STPMU1_LDO5, 2900);
-  STPMU1_Regulator_Enable(STPMU1_LDO5);
+    /* vdda */
+    STPMU1_Regulator_Voltage_Set(STPMU1_LDO5, 2900);
+    STPMU1_Regulator_Enable(STPMU1_LDO5);
 
-  /* 1v8 */
-  STPMU1_Regulator_Voltage_Set(STPMU1_LDO6, 1800);
-  STPMU1_Regulator_Enable(STPMU1_LDO6);
+    /* 2v8 */
+    STPMU1_Regulator_Voltage_Set(STPMU1_LDO6, 2800);
+    STPMU1_Regulator_Enable(STPMU1_LDO6);
 
-  STPMU1_Regulator_Enable(STPMU1_VREFDDR);
+    STPMU1_Regulator_Enable(STPMU1_VREFDDR);
 
     return RT_EOK;
 }
@@ -844,15 +846,15 @@ static rt_err_t rt_hw_pmic_init_register(void)
 static rt_err_t rt_hw_pmic_init(const char *bus_name)
 {
     PMIC_IRQn irq;
-    
+
     pmic_dev = rt_i2c_bus_device_find(bus_name);
-    
+
     if (pmic_dev == RT_NULL)
     {
         LOG_E("%s bus not found\n", bus_name);
         return -RT_ERROR;
     }
-    
+
     if (stpmu1_read_reg(VERSION_STATUS_REG) != PMIC_VERSION_ID)
     {
         return -RT_EIO;
@@ -861,7 +863,7 @@ static rt_err_t rt_hw_pmic_init(const char *bus_name)
     STPMU1_Enable_Interrupt(IT_PONKEY_R);
     STPMU1_Enable_Interrupt(IT_PONKEY_F);
     /* enable all irqs  */
-    for (irq = IT_SWOUT_R; irq < IRQ_NR; irq++) 
+    for (irq = IT_SWOUT_R; irq < IRQ_NR; irq++)
     {
         STPMU1_Enable_Interrupt(irq);
     }
@@ -872,38 +874,35 @@ static rt_err_t rt_hw_pmic_init(const char *bus_name)
 static rt_err_t rt_hw_pmic_deinit(void)
 {
     BSP_PMIC_MspDeInit();
-    
+
     return RT_EOK;
 }
 
 static int pmic_init(void)
 {
     rt_err_t result = RT_EOK;
-    
+
     if (IS_ENGINEERING_BOOT_MODE())
     {
         BSP_PMIC_MspInit();
-        
-        result = rt_hw_pmic_init("i2c3");
+
+        result = rt_hw_pmic_init(I2C_NAME);
         if(result != RT_EOK)
         {
             LOG_D("stpmic init failed: %02x", result);
             rt_hw_pmic_deinit();
             return RT_ERROR;
         }
-        
+
         rt_hw_pmic_init_register();
-    }
-    
-    if(IS_ENGINEERING_BOOT_MODE())
-    {
+
         __HAL_RCC_VREF_CLK_ENABLE();
         HAL_SYSCFG_VREFBUF_HighImpedanceConfig(SYSCFG_VREFBUF_HIGH_IMPEDANCE_DISABLE);
         HAL_SYSCFG_EnableVREFBUF();
     }
 
     LOG_I("stpmic init success!");
-        
+
     return RT_EOK;
 }
 INIT_PREV_EXPORT(pmic_init);
@@ -911,12 +910,12 @@ INIT_PREV_EXPORT(pmic_init);
 static int i2c_sample(int argc, char *argv[])
 {
     rt_uint8_t id = 0;
-    
+
     if (argc > 1)
     {
         if (!rt_strcmp(argv[1], "read"))
-        { 
-           rt_kprintf("i2c read pmic version id\n"); 
+        {
+           rt_kprintf("i2c read pmic version id\n");
            id = stpmu1_read_reg(VERSION_STATUS_REG);
            rt_kprintf("version id : 0x%02x\n", id);
            return RT_EOK;
@@ -931,7 +930,7 @@ _exit:
         rt_kprintf("Usage:\n");
         rt_kprintf("i2c_sample read          - read pmic verison id\n");
     }
-    
+
     return RT_ERROR;
 }
 MSH_CMD_EXPORT(i2c_sample, i2c sample);

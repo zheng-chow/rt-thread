@@ -333,9 +333,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls />
-              <Define>USE_HAL_DRIVER, RT_USING_ARM_LIBC, STM32F429xx</Define>
+              <Define>USE_HAL_DRIVER, RT_USING_ARM_LIBC, __RTTHREAD__, STM32F429xx</Define>
               <Undefine />
-              <IncludePath>applications;..\..\..\libcpu\arm\common;..\..\..\libcpu\arm\cortex-m4;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\spi;..\..\..\components\drivers\include;..\..\..\components\drivers\include;board;board\CubeMX_Config\Inc;board\ports;..\libraries\HAL_Drivers;..\libraries\HAL_Drivers\config;..\..\..\components\dfs\include;..\..\..\components\dfs\filesystems\devfs;..\..\..\components\finsh;.;..\..\..\include;..\..\..\components\libc\compilers\armlibc;..\..\..\components\libc\compilers\common;..\..\..\components\libc\signal;..\..\..\components\libc\pthreads;..\..\..\components\libc\time;..\libraries\STM32F4xx_HAL\STM32F4xx_HAL_Driver\Inc;..\libraries\STM32F4xx_HAL\CMSIS\Device\ST\STM32F4xx\Include;..\libraries\STM32F4xx_HAL\CMSIS\Include</IncludePath>
+              <IncludePath>applications;..\..\..\libcpu\arm\common;..\..\..\libcpu\arm\cortex-m4;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\include;..\..\..\components\drivers\spi;..\..\..\components\drivers\include;..\..\..\components\drivers\include;board;board\CubeMX_Config\Inc;board\ports;..\libraries\HAL_Drivers;..\libraries\HAL_Drivers\config;..\..\..\components\dfs\include;..\..\..\components\dfs\filesystems\devfs;..\..\..\components\finsh;.;..\..\..\include;..\..\..\components\libc\compilers\armlibc;..\..\..\components\libc\compilers\common;..\libraries\STM32F4xx_HAL\STM32F4xx_HAL_Driver\Inc;..\libraries\STM32F4xx_HAL\CMSIS\Device\ST\STM32F4xx\Include;..\libraries\STM32F4xx_HAL\CMSIS\Include</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -394,7 +394,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>cpu</GroupName>
+          <GroupName>CPU</GroupName>
           <Files>
             <File>
               <FileName>backtrace.c</FileName>
@@ -699,6 +699,48 @@
               <FilePath>..\..\..\components\finsh\msh_file.c</FilePath>
             </File>
           </Files>
+          <Files>
+            <File>
+              <FileName>mempool.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\mempool.c</FilePath>
+            </File>
+          </Files>
+          <Files>
+            <File>
+              <FileName>object.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\object.c</FilePath>
+            </File>
+          </Files>
+          <Files>
+            <File>
+              <FileName>scheduler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\scheduler.c</FilePath>
+            </File>
+          </Files>
+          <Files>
+            <File>
+              <FileName>signal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\signal.c</FilePath>
+            </File>
+          </Files>
+          <Files>
+            <File>
+              <FileName>thread.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\thread.c</FilePath>
+            </File>
+          </Files>
+          <Files>
+            <File>
+              <FileName>timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\src\timer.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>Kernel</GroupName>
@@ -751,6 +793,9 @@
               <FilePath>..\..\..\src\kservice.c</FilePath>
             </File>
           </Files>
+        </Group>
+        <Group>
+          <GroupName>pthreads</GroupName>
           <Files>
             <File>
               <FileName>memheap.c</FileName>
@@ -800,110 +845,6 @@
               <FilePath>..\..\..\src\timer.c</FilePath>
             </File>
           </Files>
-        </Group>
-        <Group>
-          <GroupName>libc</GroupName>
-          <Files>
-            <File>
-              <FileName>libc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\compilers\armlibc\libc.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>mem_std.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\compilers\armlibc\mem_std.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>stdio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\compilers\armlibc\stdio.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>stubs.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\compilers\armlibc\stubs.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>time.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\compilers\common\time.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>unistd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\compilers\common\unistd.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>posix_signal.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\signal\posix_signal.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>pthreads</GroupName>
-          <Files>
-            <File>
-              <FileName>mqueue.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\pthreads\mqueue.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>pthread.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\pthreads\pthread.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>pthread_attr.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\pthreads\pthread_attr.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>pthread_barrier.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\pthreads\pthread_barrier.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>pthread_cond.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\pthreads\pthread_cond.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>pthread_mutex.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\pthreads\pthread_mutex.c</FilePath>
-            </File>
-          </Files>
-          <Files>
-            <File>
-              <FileName>pthread_rwlock.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\pthreads\pthread_rwlock.c</FilePath>
-            </File>
-          </Files>
           <Files>
             <File>
               <FileName>pthread_spin.c</FileName>
@@ -941,14 +882,14 @@
           </Files>
           <Files>
             <File>
-              <FileName>posix_sleep.c</FileName>
+              <FileName>unistd.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\components\libc\time\posix_sleep.c</FilePath>
+              <FilePath>..\..\..\components\libc\compilers\common\unistd.c</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>STM32_HAL</GroupName>
+          <GroupName>Libraries</GroupName>
           <Files>
             <File>
               <FileName>system_stm32f4xx.c</FileName>

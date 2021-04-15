@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -43,7 +43,7 @@ rt_uint8_t rt_thread_ready_table[32];
 #ifndef RT_USING_SMP
 extern volatile rt_uint8_t rt_interrupt_nest;
 static rt_int16_t rt_scheduler_lock_nest;
-struct rt_thread *rt_current_thread;
+struct rt_thread *rt_current_thread = RT_NULL;
 rt_uint8_t rt_current_priority;
 #endif /*RT_USING_SMP*/
 
@@ -90,12 +90,7 @@ static void _rt_scheduler_stack_check(struct rt_thread *thread)
         rt_ubase_t level;
 
         rt_kprintf("thread:%s stack overflow\n", thread->name);
-#ifdef RT_USING_FINSH
-        {
-            extern long list_thread(void);
-            list_thread();
-        }
-#endif
+
         level = rt_hw_interrupt_disable();
         while (level);
     }
@@ -275,10 +270,10 @@ void rt_system_scheduler_start(void)
 #ifdef RT_USING_SMP
 /**
  * This function will handle IPI interrupt and do a scheduling in system;
- * 
+ *
  * @param vector, the number of IPI interrupt for system scheduling
  * @param param, use RT_NULL
- * 
+ *
  * NOTE: this function should be invoke or register as ISR in BSP.
  */
 void rt_scheduler_ipi_handler(int vector, void *param)
@@ -288,7 +283,7 @@ void rt_scheduler_ipi_handler(int vector, void *param)
 
 /**
  * This function will perform one scheduling. It will select one thread
- * with the highest priority level in global ready queue or local ready queue, 
+ * with the highest priority level in global ready queue or local ready queue,
  * then switch to it.
  */
 void rt_schedule(void)

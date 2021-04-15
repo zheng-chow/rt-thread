@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2020, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -63,15 +63,22 @@ static rt_err_t uart_configure(struct rt_serial_device *serial, struct serial_co
         AUX_MU_LCR_REG(uart->hw_base)   = 3;    /* Works in 8-bit mode */
         AUX_MU_MCR_REG(uart->hw_base)   = 0;    /* Disable RTS */
         AUX_MU_IIR_REG(uart->hw_base)   = 0xC6; /* Enable FIFO, Clear FIFO */
-        AUX_MU_BAUD_REG(uart->hw_base)  = 270;  /* 115200 = system clock 250MHz / (8 * (baud + 1)), baud = 270 */
+        AUX_MU_BAUD_REG(uart->hw_base)  = 541;  /* 115200 = system clock 500MHz / (8 * (baud + 1)), baud = 541 */
         AUX_MU_CNTL_REG(uart->hw_base)  = 3;    /* Enable Transmitter and Receiver */
         return RT_EOK;
     }
 
     if(uart->hw_base == UART0_BASE)
     {
+#ifndef BSP_USING_BULETOOTH
         prev_raspi_pin_mode(GPIO_PIN_14, ALT0);
         prev_raspi_pin_mode(GPIO_PIN_15, ALT0);
+#else
+        prev_raspi_pin_mode(GPIO_PIN_30, ALT3);
+        prev_raspi_pin_mode(GPIO_PIN_31, ALT3);
+        prev_raspi_pin_mode(GPIO_PIN_32, ALT3);
+        prev_raspi_pin_mode(GPIO_PIN_33, ALT3);
+#endif
     }
 
     if(uart->hw_base == UART3_BASE)
@@ -92,13 +99,21 @@ static rt_err_t uart_configure(struct rt_serial_device *serial, struct serial_co
         prev_raspi_pin_mode(GPIO_PIN_13, ALT4);
     }
 
-    PL011_REG_CR(uart->hw_base) = 0;/*Clear UART setting*/
-    PL011_REG_LCRH(uart->hw_base) = 0;/*disable FIFO*/
+    PL011_REG_IMSC(uart->hw_base) = 0;     /* mask all interrupt */
+    PL011_REG_ICR(uart->hw_base) = 0x7ff;  /* clear all interrupt */
+    //PL011 clock 480MHz 480x10^6/baudrate/16
     PL011_REG_IBRD(uart->hw_base) = ibrd;
     PL011_REG_FBRD(uart->hw_base) = (((bauddiv - ibrd * 1000) * 64 + 500) / 1000);
-    PL011_REG_LCRH(uart->hw_base) = PL011_LCRH_WLEN_8;/*FIFO*/
-    PL011_REG_CR(uart->hw_base) = PL011_CR_UARTEN | PL011_CR_TXE | PL011_CR_RXE;/*art enable, TX/RX enable*/
-
+#ifdef BSP_USING_BULETOOTH
+    PL011_REG_IFLS(uart->hw_base) = 0x08;
+    PL011_REG_LCRH(uart->hw_base) = 0x70;
+    PL011_REG_CR(uart->hw_base) = PL011_CR_UARTEN | PL011_CR_TXE | PL011_CR_RXE | PL011_CR_RTS;
+#else
+    PL011_REG_IFLS(uart->hw_base) = 0x0;
+    PL011_REG_LCRH(uart->hw_base) = PL011_LCRH_WLEN_8;
+    PL011_REG_CR(uart->hw_base) = PL011_CR_UARTEN | PL011_CR_TXE | PL011_CR_RXE;
+#endif
+    PL011_REG_IMSC(uart->hw_base) = 0;
     return RT_EOK;
 }
 
@@ -196,7 +211,7 @@ static const struct rt_uart_ops _uart_ops =
 #ifdef RT_USING_UART1
 static void rt_hw_aux_uart_isr(int irqno, void *param)
 {
-    struct rt_serial_device *serial = (struct rt_serial_device*)param; 
+    struct rt_serial_device *serial = (struct rt_serial_device*)param;
     rt_hw_serial_isr(serial, RT_SERIAL_EVENT_RX_IND);
 }
 #endif
@@ -205,7 +220,7 @@ static void rt_hw_uart_isr(int irqno, void *param)
 {
 #ifdef RT_USING_UART0
     if((PACTL_CS & IRQ_UART0) == IRQ_UART0)
-    {   
+    {
         PACTL_CS &=  ~(IRQ_UART0);
         rt_hw_serial_isr(&_serial0, RT_SERIAL_EVENT_RX_IND);
         PL011_REG_ICR(UART0_BASE) = PL011_INTERRUPT_RECEIVE;

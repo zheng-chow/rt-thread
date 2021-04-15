@@ -10,12 +10,12 @@
  * LICENSE in this distribution or at http://www.rt-thread.org/license/LICENSE
  *******************************************************************************
  * @section Change Logs
- * Date			Author		Notes
+ * Date         Author      Notes
  * 2006-08-31   Bernard     first implementation
  * 2010-12-29   onelife     Modify for EFM32
  * 2011-12-20   onelife     Add RTGUI initialization routine
  * 2012-02-21   onelife     Add energy management initialization routine
- * 2012-05-15	onelife		Modified to compatible with CMSIS v3
+ * 2012-05-15   onelife     Modified to compatible with CMSIS v3
  ******************************************************************************/
 
 /***************************************************************************//**
@@ -101,12 +101,6 @@ void rtthread_startup(void)
 
     /* show version */
     rt_show_version();
-
-    /* init tick */
-    rt_system_tick_init();
-
-    /* init kernel object */
-    rt_system_object_init();
 
     /* init timer system */
     rt_system_timer_init();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -344,7 +344,7 @@ void rt_hw_hard_fault_exception(struct exception_info * exception_info)
 /**
  * shutdown CPU
  */
-void rt_hw_cpu_shutdown(void)
+RT_WEAK void rt_hw_cpu_shutdown(void)
 {
     rt_kprintf("shutdown...\n");
 

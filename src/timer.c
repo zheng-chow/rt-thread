@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -201,7 +201,7 @@ void rt_timer_init(rt_timer_t  timer,
     RT_ASSERT(timer != RT_NULL);
 
     /* timer object initialization */
-    rt_object_init((rt_object_t)timer, RT_Object_Class_Timer, name);
+    rt_object_init(&(timer->parent), RT_Object_Class_Timer, name);
 
     _rt_timer_init(timer, timeout, parameter, time, flag);
 }
@@ -233,7 +233,7 @@ rt_err_t rt_timer_detach(rt_timer_t timer)
     /* enable interrupt */
     rt_hw_interrupt_enable(level);
 
-    rt_object_detach((rt_object_t)timer);
+    rt_object_detach(&(timer->parent));
 
     return RT_EOK;
 }
@@ -298,7 +298,7 @@ rt_err_t rt_timer_delete(rt_timer_t timer)
     /* enable interrupt */
     rt_hw_interrupt_enable(level);
 
-    rt_object_delete((rt_object_t)timer);
+    rt_object_delete(&(timer->parent));
 
     return RT_EOK;
 }
@@ -331,7 +331,6 @@ rt_err_t rt_timer_start(rt_timer_t timer)
     _rt_timer_remove(timer);
     /* change status of timer */
     timer->parent.flag &= ~RT_TIMER_FLAG_ACTIVATED;
-    rt_hw_interrupt_enable(level);
 
     RT_OBJECT_HOOK_CALL(rt_object_take_hook, (&(timer->parent)));
 
@@ -341,9 +340,6 @@ rt_err_t rt_timer_start(rt_timer_t timer)
      */
     RT_ASSERT(timer->init_tick < RT_TICK_MAX / 2);
     timer->timeout_tick = rt_tick_get() + timer->init_tick;
-
-    /* disable interrupt */
-    level = rt_hw_interrupt_disable();
 
 #ifdef RT_USING_TIMER_SOFT
     if (timer->parent.flag & RT_TIMER_FLAG_SOFT_TIMER)
@@ -579,7 +575,7 @@ void rt_timer_check(void)
             {
                 continue;
             }
-
+            rt_list_remove(&(t->row[RT_TIMER_SKIP_LIST_LEVEL - 1]));
             if ((t->parent.flag & RT_TIMER_FLAG_PERIODIC) &&
                 (t->parent.flag & RT_TIMER_FLAG_ACTIVATED))
             {
@@ -667,7 +663,7 @@ void rt_soft_timer_check(void)
             {
                 continue;
             }
-
+            rt_list_remove(&(t->row[RT_TIMER_SKIP_LIST_LEVEL - 1]));
             if ((t->parent.flag & RT_TIMER_FLAG_PERIODIC) &&
                 (t->parent.flag & RT_TIMER_FLAG_ACTIVATED))
             {

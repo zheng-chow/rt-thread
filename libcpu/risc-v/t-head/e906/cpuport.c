@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -131,7 +131,7 @@ rt_uint8_t *rt_hw_stack_init(void       *tentry,
 
 
 /**
- * This function will disable global interrupt 
+ * This function will disable global interrupt
  *
  * @param none
  *
@@ -145,7 +145,7 @@ rt_base_t rt_hw_interrupt_disable(void)
 }
 
 /**
- * This function will ennable global interrupt 
+ * This function will ennable global interrupt
  *
  * @param level not used
  *
@@ -157,7 +157,7 @@ void rt_hw_interrupt_enable(rt_base_t level)
 }
 
 /** shutdown CPU */
-void rt_hw_cpu_shutdown()
+RT_WEAK void rt_hw_cpu_shutdown()
 {
     rt_uint32_t level;
     rt_kprintf("shutdown...\n");

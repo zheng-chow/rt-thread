@@ -15,10 +15,9 @@
 
 #if ((defined(BSP_USING_CRYPTO) || defined(BSP_USING_TRNG) || defined(BSP_USING_CRC)) && defined(RT_USING_HWCRYPTO))
 
-#include <string.h>
-
 #include <rtdevice.h>
 #include <rtdbg.h>
+#include <board.h>
 #include "NuMicro.h"
 #include <nu_bitutil.h>
 
@@ -31,6 +30,14 @@
 #endif
 
 /* Private typedef --------------------------------------------------------------*/
+
+typedef struct
+{
+    uint8_t *pu8SHATempBuf;
+    uint32_t u32SHATempBufLen;
+    uint32_t u32DMAMode;
+    uint32_t u32BlockSize;
+} S_SHA_CONTEXT;
 
 /* Private functions ------------------------------------------------------------*/
 static rt_err_t nu_hwcrypto_create(struct rt_hwcrypto_ctx *ctx);
@@ -49,9 +56,6 @@ static const struct rt_hwcrypto_ops nu_hwcrypto_ops =
 
 /* Crypto engine operation ------------------------------------------------------------*/
 #if defined(BSP_USING_CRYPTO)
-
-//define NU_HWCRYPTO_NOT_ALIGN_CHECK to disable plain/cipher buffer address alignment checking
-//#define NU_HWCRYPTO_NOT_ALIGN_CHECK
 
 #define NU_HWCRYPTO_DES_3KEYS    1
 #define NU_HWCRYPTO_DES_NO3KEYS  0
@@ -77,6 +81,8 @@ static volatile int s_SHA_done;
 
 static rt_err_t nu_crypto_init(void)
 {
+    rt_err_t result;
+
     /* Enable Crypto engine interrupt */
     NVIC_EnableIRQ(CRPT_IRQn);
 
@@ -85,12 +91,19 @@ static rt_err_t nu_crypto_init(void)
     SHA_ENABLE_INT(CRPT);
 
     //init cipher mutex
-    rt_mutex_init(&s_AES_mutex, NU_HWCRYPTO_AES_NAME, RT_IPC_FLAG_FIFO);
-    rt_mutex_init(&s_TDES_mutex, NU_HWCRYPTO_TDES_NAME, RT_IPC_FLAG_FIFO);
-    rt_mutex_init(&s_SHA_mutex, NU_HWCRYPTO_SHA_NAME, RT_IPC_FLAG_FIFO);
+    result = rt_mutex_init(&s_AES_mutex, NU_HWCRYPTO_AES_NAME, RT_IPC_FLAG_FIFO);
+    RT_ASSERT(result == RT_EOK);
+
+    result = rt_mutex_init(&s_TDES_mutex, NU_HWCRYPTO_TDES_NAME, RT_IPC_FLAG_FIFO);
+    RT_ASSERT(result == RT_EOK);
+
+    result = rt_mutex_init(&s_SHA_mutex, NU_HWCRYPTO_SHA_NAME, RT_IPC_FLAG_FIFO);
+    RT_ASSERT(result == RT_EOK);
+
 #if !defined(BSP_USING_TRNG)
     PRNG_ENABLE_INT(CRPT);
-    rt_mutex_init(&s_PRNG_mutex, NU_HWCRYPTO_PRNG_NAME, RT_IPC_FLAG_FIFO);
+    result = rt_mutex_init(&s_PRNG_mutex, NU_HWCRYPTO_PRNG_NAME, RT_IPC_FLAG_FIFO);
+    RT_ASSERT(result == RT_EOK);
 #endif
 
     return RT_EOK;
@@ -102,6 +115,8 @@ void CRYPTO_IRQHandler()
 {
     if (AES_GET_INT_FLAG(CRPT))
     {
+        if (CRPT->INTSTS & (CRPT_INTSTS_AESEIF_Msk) || (CRPT->AES_STS & (CRPT_AES_STS_BUSERR_Msk | CRPT_AES_STS_CNTERR_Msk | (0x1ul << 21))))
+            rt_kprintf("AES ERROR\n");
         s_AES_done = 1;
         AES_CLR_INT_FLAG(CRPT);
     }
@@ -114,6 +129,8 @@ void CRYPTO_IRQHandler()
 
     if (SHA_GET_INT_FLAG(CRPT))
     {
+        if (CRPT->INTSTS & (CRPT_INTSTS_HMACEIF_Msk) || (CRPT->HMAC_STS & (CRPT_HMAC_STS_DMAERR_Msk | (0x1ul << 9))))
+            rt_kprintf("SHA ERROR\n");
         s_SHA_done = 1;
         SHA_CLR_INT_FLAG(CRPT);
     }
@@ -138,6 +155,8 @@ static rt_err_t nu_aes_crypt_run(
     uint32_t u32DataLen
 )
 {
+    rt_err_t result;
+
     uint32_t au32SwapKey[8];
     uint32_t au32SwapIV[4];
 
@@ -163,7 +182,8 @@ static rt_err_t nu_aes_crypt_run(
     au32SwapIV[2] = nu_get32_be(&pu8IV[8]);
     au32SwapIV[3] = nu_get32_be(&pu8IV[12]);
 
-    rt_mutex_take(&s_AES_mutex, RT_WAITING_FOREVER);
+    result = rt_mutex_take(&s_AES_mutex, RT_WAITING_FOREVER);
+    RT_ASSERT(result == RT_EOK);
 
     //Using Channel 0
     AES_Open(CRPT, 0, bEncrypt, u32OpMode, u32KeySize, AES_IN_OUT_SWAP);
@@ -178,7 +198,8 @@ static rt_err_t nu_aes_crypt_run(
     AES_Start(CRPT, 0, CRYPTO_DMA_ONE_SHOT);
     while (!s_AES_done) {};
 
-    rt_mutex_release(&s_AES_mutex);
+    result = rt_mutex_release(&s_AES_mutex);
+    RT_ASSERT(result == RT_EOK);
 
     return RT_EOK;
 }
@@ -187,19 +208,26 @@ static rt_err_t nu_aes_crypt_run(
 //Using PRNG instead of TRNG
 static void nu_prng_open(uint32_t u32Seed)
 {
-    rt_mutex_take(&s_PRNG_mutex, RT_WAITING_FOREVER);
+    rt_err_t result;
+
+    result = rt_mutex_take(&s_PRNG_mutex, RT_WAITING_FOREVER);
+    RT_ASSERT(result == RT_EOK);
 
     //Open PRNG 64 bits. But always return 32 bits
     PRNG_Open(CRPT, PRNG_KEY_SIZE_64, PRNG_SEED_RELOAD, u32Seed);
 
-    rt_mutex_release(&s_PRNG_mutex);
+    result = rt_mutex_release(&s_PRNG_mutex);
+    RT_ASSERT(result == RT_EOK);
+
 }
 
 static rt_uint32_t nu_prng_run(void)
 {
+    rt_err_t result;
     uint32_t au32RNGValue[2];
 
-    rt_mutex_take(&s_PRNG_mutex, RT_WAITING_FOREVER);
+    result = rt_mutex_take(&s_PRNG_mutex, RT_WAITING_FOREVER);
+    RT_ASSERT(result == RT_EOK);
 
     s_PRNG_done = 0;
     PRNG_Start(CRPT);
@@ -207,7 +235,9 @@ static rt_uint32_t nu_prng_run(void)
 
     PRNG_Read(CRPT, au32RNGValue);
 
-    rt_mutex_release(&s_PRNG_mutex);
+    result = rt_mutex_release(&s_PRNG_mutex);
+    RT_ASSERT(result == RT_EOK);
+
     return au32RNGValue[0];
 }
 
@@ -218,8 +248,11 @@ static rt_err_t nu_aes_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
     uint32_t u32AESOpMode;
     uint32_t u32AESKeySize;
     unsigned char *in, *out;
+    unsigned char in_align_flag = 0;
+    unsigned char out_align_flag = 0;
+    unsigned char iv_temp[16];
 
-    if ((symmetric_info->length % 16) != 0)
+    if ((symmetric_info->length % 4) != 0)
     {
         return -RT_EINVAL;
     }
@@ -267,12 +300,8 @@ static rt_err_t nu_aes_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
     in = (unsigned char *)symmetric_info->in;
     out = (unsigned char *)symmetric_info->out;
 
-#if !defined(NU_HWCRYPTO_NOT_ALIGN_CHECK)
-    unsigned char in_align_flag = 0;
-    unsigned char out_align_flag = 0;
-
-    //Checking in/out data buffer address alignment or not
-    if (((rt_uint32_t)in % 4) != 0)
+    //Checking in/out data buffer address not alignment or out of SRAM
+    if (((rt_uint32_t)in % 4) != 0 || ((rt_uint32_t)in < SRAM_BASE) || ((rt_uint32_t)in > SRAM_END))
     {
         in = rt_malloc(symmetric_info->length);
         if (in == RT_NULL)
@@ -281,11 +310,11 @@ static rt_err_t nu_aes_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
             return -RT_ENOMEM;
         }
 
-        memcpy(in, symmetric_info->in, symmetric_info->length);
+        rt_memcpy(in, symmetric_info->in, symmetric_info->length);
         in_align_flag = 1;
     }
 
-    if (((rt_uint32_t)out % 4) != 0)
+    if (((rt_uint32_t)out % 4) != 0 || ((rt_uint32_t)out < SRAM_BASE) || ((rt_uint32_t)out > SRAM_END))
     {
         out = rt_malloc(symmetric_info->length);
         if (out == RT_NULL)
@@ -298,14 +327,35 @@ static rt_err_t nu_aes_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
 
         out_align_flag = 1;
     }
-#endif
+
+    if ((u32AESOpMode == AES_MODE_CBC) && (symmetric_info->mode == HWCRYPTO_MODE_DECRYPT))
+    {
+        uint32_t loop;
+
+        loop = (symmetric_info->length - 1) / 16;
+        rt_memcpy(iv_temp, in + (loop * 16), 16);
+    }
 
     nu_aes_crypt_run(symmetric_info->mode == HWCRYPTO_MODE_ENCRYPT ? TRUE : FALSE, u32AESOpMode, symmetric_ctx->key, u32AESKeySize, symmetric_ctx->iv, in, out, symmetric_info->length);
 
-#if !defined(NU_HWCRYPTO_NOT_ALIGN_CHECK)
+    if (u32AESOpMode == AES_MODE_CBC)
+    {
+        if (symmetric_info->mode == HWCRYPTO_MODE_DECRYPT)
+        {
+            rt_memcpy(symmetric_ctx->iv, iv_temp, 16);
+        }
+        else
+        {
+            uint32_t loop;
+
+            loop = (symmetric_info->length - 1) / 16;
+            rt_memcpy(symmetric_ctx->iv, out + (loop * 16), 16);
+        }
+    }
+
     if (out_align_flag)
     {
-        memcpy(symmetric_info->out, out, symmetric_info->length);
+        rt_memcpy(symmetric_info->out, out, symmetric_info->length);
         rt_free(out);
     }
 
@@ -313,7 +363,6 @@ static rt_err_t nu_aes_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
     {
         rt_free(in);
     }
-#endif
 
     return RT_EOK;
 }
@@ -329,6 +378,8 @@ static rt_err_t nu_des_crypt_run(
     uint32_t u32DataLen
 )
 {
+    rt_err_t result;
+
     uint32_t au32SwapKey[3][2];
     uint32_t au32SwapIV[2];
 
@@ -346,7 +397,8 @@ static rt_err_t nu_des_crypt_run(
     au32SwapIV[0] = nu_get32_be(&pu8IV[0]);
     au32SwapIV[1] = nu_get32_be(&pu8IV[4]);
 
-    rt_mutex_take(&s_TDES_mutex, RT_WAITING_FOREVER);
+    result = rt_mutex_take(&s_TDES_mutex, RT_WAITING_FOREVER);
+    RT_ASSERT(result == RT_EOK);
 
     //Using Channel 0
     TDES_Open(CRPT, 0, bEncrypt, (u32OpMode & CRPT_TDES_CTL_TMODE_Msk), u32KeySize, u32OpMode, TDES_IN_OUT_WHL_SWAP);
@@ -361,7 +413,8 @@ static rt_err_t nu_des_crypt_run(
     TDES_Start(CRPT, 0, CRYPTO_DMA_ONE_SHOT);
     while (!s_TDES_done) {};
 
-    rt_mutex_release(&s_TDES_mutex);
+    result = rt_mutex_release(&s_TDES_mutex);
+    RT_ASSERT(result == RT_EOK);
 
     return RT_EOK;
 }
@@ -371,6 +424,8 @@ static rt_err_t nu_des_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
     uint32_t u32DESOpMode;
     uint32_t u32DESKeySize;
     unsigned char *in, *out;
+    unsigned char in_align_flag = 0;
+    unsigned char out_align_flag = 0;
 
     if ((symmetric_info->length % 8) != 0)
     {
@@ -413,12 +468,8 @@ static rt_err_t nu_des_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
     in = (unsigned char *)symmetric_info->in;
     out = (unsigned char *)symmetric_info->out;
 
-#if !defined(NU_HWCRYPTO_NOT_ALIGN_CHECK)
-    unsigned char in_align_flag = 0;
-    unsigned char out_align_flag = 0;
-
-    //Checking in/out data buffer address alignment or not
-    if (((rt_uint32_t)in % 4) != 0)
+    //Checking in/out data buffer address not alignment or out of SRAM
+    if (((rt_uint32_t)in % 4) != 0 || ((rt_uint32_t)in < SRAM_BASE) || ((rt_uint32_t)in > SRAM_END))
     {
         in = rt_malloc(symmetric_info->length);
         if (in == RT_NULL)
@@ -427,11 +478,11 @@ static rt_err_t nu_des_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
             return -RT_ENOMEM;
         }
 
-        memcpy(in, symmetric_info->in, symmetric_info->length);
+        rt_memcpy(in, symmetric_info->in, symmetric_info->length);
         in_align_flag = 1;
     }
 
-    if (((rt_uint32_t)out % 4) != 0)
+    if (((rt_uint32_t)out % 4) != 0 || ((rt_uint32_t)out < SRAM_BASE) || ((rt_uint32_t)out > SRAM_END))
     {
         out = rt_malloc(symmetric_info->length);
         if (out == RT_NULL)
@@ -444,14 +495,12 @@ static rt_err_t nu_des_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
 
         out_align_flag = 1;
     }
-#endif
 
     nu_des_crypt_run(symmetric_info->mode == HWCRYPTO_MODE_ENCRYPT ? TRUE : FALSE, u32DESOpMode, symmetric_ctx->key, u32DESKeySize, symmetric_ctx->iv, in, out, symmetric_info->length);
 
-#if !defined(NU_HWCRYPTO_NOT_ALIGN_CHECK)
     if (out_align_flag)
     {
-        memcpy(symmetric_info->out, out, symmetric_info->length);
+        rt_memcpy(symmetric_info->out, out, symmetric_info->length);
         rt_free(out);
     }
 
@@ -459,31 +508,148 @@ static rt_err_t nu_des_crypt(struct hwcrypto_symmetric *symmetric_ctx, struct hw
     {
         rt_free(in);
     }
-#endif
 
     return RT_EOK;
 }
 
+#define CRPT_HMAC_CTL_DMAFIRST_Pos     (4)                                               /*!< CRPT_T::HMAC_CTL: DMAFIRST Position  */
+#define CRPT_HMAC_CTL_DMAFIRST_Msk     (0x1ul << CRPT_HMAC_CTL_DMAFIRST_Pos)           /*!< CRPT_T::HMAC_CTL: DMAFIRST Mask      */
+
+static void SHABlockUpdate(uint32_t u32OpMode, uint32_t u32SrcAddr, uint32_t u32Len, uint32_t u32Mode)
+{
+    SHA_Open(CRPT, u32OpMode, SHA_IN_OUT_SWAP, 0);
+
+    //Setup SHA DMA
+    SHA_SetDMATransfer(CRPT, u32SrcAddr, u32Len);
+    SHA_CLR_INT_FLAG(CRPT);
+
+    //Start SHA
+    s_SHA_done = 0;
+
+    if (u32Mode == CRYPTO_DMA_FIRST)
+    {
+        if ((SYS->CSERVER & SYS_CSERVER_VERSION_Msk) == 0x0)
+        {
+            //M480MD version
+            u32Mode = CRYPTO_DMA_CONTINUE;
+        }
+        else
+        {
+            //M480LD version
+            CRPT->HMAC_CTL |= CRPT_HMAC_CTL_DMAFIRST_Msk;
+        }
+    }
+    else
+    {
+        if ((SYS->CSERVER & SYS_CSERVER_VERSION_Msk) != 0x0)
+        {
+            //M480LD version
+            CRPT->HMAC_CTL &= ~CRPT_HMAC_CTL_DMAFIRST_Msk;
+        }
+    }
+
+    SHA_Start(CRPT, u32Mode);
+
+    while (!s_SHA_done) {};
+}
+
 static rt_err_t nu_sha_hash_run(
+    S_SHA_CONTEXT *psSHACtx,
     uint32_t u32OpMode,
     uint8_t *pu8InData,
     uint32_t u32DataLen
 )
 {
-    rt_mutex_take(&s_SHA_mutex, RT_WAITING_FOREVER);
+    rt_err_t result;
 
-    //Using SHA
-    SHA_Open(CRPT, u32OpMode, SHA_IN_OUT_SWAP, 0);
+    result = rt_mutex_take(&s_SHA_mutex, RT_WAITING_FOREVER);
+    RT_ASSERT(result == RT_EOK);
 
-    //Setup SHA DMA
-    SHA_SetDMATransfer(CRPT, (uint32_t)pu8InData, u32DataLen);
-    SHA_CLR_INT_FLAG(CRPT);
-    //Start SHA
-    s_SHA_done = 0;
-    SHA_Start(CRPT, CRYPTO_DMA_ONE_SHOT);
-    while (!s_SHA_done) {};
+    uint8_t *pu8SrcAddr = (uint8_t *)pu8InData;
+    uint32_t u32CopyLen = 0;
 
-    rt_mutex_release(&s_SHA_mutex);
+    while ((psSHACtx->u32SHATempBufLen + u32DataLen) > psSHACtx->u32BlockSize)
+    {
+        if (psSHACtx->pu8SHATempBuf)
+        {
+            if (psSHACtx->u32SHATempBufLen == psSHACtx->u32BlockSize)
+            {
+                //Trigger SHA block update
+                SHABlockUpdate(u32OpMode, (uint32_t)psSHACtx->pu8SHATempBuf, psSHACtx->u32BlockSize, psSHACtx->u32DMAMode);
+                psSHACtx->u32DMAMode = CRYPTO_DMA_CONTINUE;
+                //free SHATempBuff
+                rt_free(psSHACtx->pu8SHATempBuf);
+                psSHACtx->pu8SHATempBuf = NULL;
+                psSHACtx->u32SHATempBufLen = 0;
+                continue;
+            }
+            else
+            {
+                u32CopyLen = psSHACtx->u32BlockSize - psSHACtx->u32SHATempBufLen;
+                if (u32DataLen < u32CopyLen)
+                    u32CopyLen = u32DataLen;
+                rt_memcpy(psSHACtx->pu8SHATempBuf + psSHACtx->u32SHATempBufLen, pu8SrcAddr, u32CopyLen);
+                psSHACtx->u32SHATempBufLen += u32CopyLen;
+                pu8SrcAddr += u32CopyLen;
+                u32DataLen -= u32CopyLen;
+                continue;
+            }
+        }
+
+        if ((uint32_t) pu8SrcAddr & 3)  //address not aligned 4
+        {
+            psSHACtx->pu8SHATempBuf = rt_malloc(psSHACtx->u32BlockSize);
+
+            if (psSHACtx->pu8SHATempBuf == RT_NULL)
+            {
+                LOG_E("fun[%s] memory allocate %d bytes failed!", __FUNCTION__, psSHACtx->u32BlockSize);
+
+                result = rt_mutex_release(&s_SHA_mutex);
+                RT_ASSERT(result == RT_EOK);
+
+                return -RT_ENOMEM;
+            }
+
+            rt_memcpy(psSHACtx->pu8SHATempBuf, pu8SrcAddr, psSHACtx->u32BlockSize);
+            psSHACtx->u32SHATempBufLen = psSHACtx->u32BlockSize;
+            pu8SrcAddr += psSHACtx->u32BlockSize;
+            u32DataLen -= psSHACtx->u32BlockSize;
+            continue;
+        }
+
+        //Trigger SHA block update
+        SHABlockUpdate(u32OpMode, (uint32_t)pu8SrcAddr, psSHACtx->u32BlockSize, psSHACtx->u32DMAMode);
+        psSHACtx->u32DMAMode = CRYPTO_DMA_CONTINUE;
+
+        pu8SrcAddr += psSHACtx->u32BlockSize;
+        u32DataLen -= psSHACtx->u32BlockSize;
+    }
+
+    if (u32DataLen)
+    {
+        if (psSHACtx->pu8SHATempBuf == NULL)
+        {
+            psSHACtx->pu8SHATempBuf = rt_malloc(psSHACtx->u32BlockSize);
+
+            if (psSHACtx->pu8SHATempBuf == RT_NULL)
+            {
+                LOG_E("fun[%s] memory allocate %d bytes failed!", __FUNCTION__, psSHACtx->u32BlockSize);
+
+                result = rt_mutex_release(&s_SHA_mutex);
+                RT_ASSERT(result == RT_EOK);
+
+                return -RT_ENOMEM;
+            }
+
+            psSHACtx->u32SHATempBufLen = 0;
+        }
+
+        rt_memcpy(psSHACtx->pu8SHATempBuf, pu8SrcAddr, u32DataLen);
+        psSHACtx->u32SHATempBufLen += u32DataLen;
+    }
+
+    result = rt_mutex_release(&s_SHA_mutex);
+    RT_ASSERT(result == RT_EOK);
 
     return RT_EOK;
 }
@@ -492,6 +658,7 @@ static rt_err_t nu_sha_update(struct hwcrypto_hash *hash_ctx, const rt_uint8_t *
 {
     uint32_t u32SHAOpMode;
     unsigned char *nu_in;
+    unsigned char in_align_flag = 0;
 
     //Select SHA operation mode
     switch (hash_ctx->parent.type & (HWCRYPTO_MAIN_TYPE_MASK | HWCRYPTO_SUB_TYPE_MASK))
@@ -517,11 +684,8 @@ static rt_err_t nu_sha_update(struct hwcrypto_hash *hash_ctx, const rt_uint8_t *
 
     nu_in = (unsigned char *)in;
 
-#if !defined(NU_HWCRYPTO_NOT_ALIGN_CHECK)
-    unsigned char in_align_flag = 0;
-
-    //Checking in data buffer address alignment or not
-    if (((rt_uint32_t)nu_in % 4) != 0)
+    //Checking in data buffer address not alignment or out of SRAM
+    if (((rt_uint32_t)nu_in % 4) != 0 || ((rt_uint32_t)nu_in < SRAM_BASE) || ((rt_uint32_t)nu_in > SRAM_END))
     {
         nu_in = rt_malloc(length);
         if (nu_in == RT_NULL)
@@ -530,19 +694,16 @@ static rt_err_t nu_sha_update(struct hwcrypto_hash *hash_ctx, const rt_uint8_t *
             return -RT_ENOMEM;
         }
 
-        memcpy(nu_in, in, length);
+        rt_memcpy(nu_in, in, length);
         in_align_flag = 1;
     }
-#endif
 
-    nu_sha_hash_run(u32SHAOpMode, nu_in, length);
+    nu_sha_hash_run(hash_ctx->parent.contex, u32SHAOpMode, nu_in, length);
 
-#if !defined(NU_HWCRYPTO_NOT_ALIGN_CHECK)
     if (in_align_flag)
     {
         rt_free(nu_in);
     }
-#endif
 
     return RT_EOK;
 }
@@ -550,35 +711,43 @@ static rt_err_t nu_sha_update(struct hwcrypto_hash *hash_ctx, const rt_uint8_t *
 static rt_err_t nu_sha_finish(struct hwcrypto_hash *hash_ctx, rt_uint8_t *out, rt_size_t length)
 {
     unsigned char *nu_out;
+    unsigned char out_align_flag = 0;
+    uint32_t u32SHAOpMode;
+    S_SHA_CONTEXT *psSHACtx = hash_ctx->parent.contex;
 
     //Check SHA Hash value buffer length
     switch (hash_ctx->parent.type & (HWCRYPTO_MAIN_TYPE_MASK | HWCRYPTO_SUB_TYPE_MASK))
     {
     case HWCRYPTO_TYPE_SHA1:
+        u32SHAOpMode = SHA_MODE_SHA1;
         if (length < 5UL)
         {
             return -RT_EINVAL;
         }
         break;
     case HWCRYPTO_TYPE_SHA224:
+        u32SHAOpMode = SHA_MODE_SHA224;
         if (length < 7UL)
         {
             return -RT_EINVAL;
         }
         break;
     case HWCRYPTO_TYPE_SHA256:
+        u32SHAOpMode = SHA_MODE_SHA256;
         if (length < 8UL)
         {
             return -RT_EINVAL;
         }
         break;
     case HWCRYPTO_TYPE_SHA384:
+        u32SHAOpMode = SHA_MODE_SHA384;
         if (length < 12UL)
         {
             return -RT_EINVAL;
         }
         break;
     case HWCRYPTO_TYPE_SHA512:
+        u32SHAOpMode = SHA_MODE_SHA512;
         if (length < 16UL)
         {
             return -RT_EINVAL;
@@ -589,9 +758,6 @@ static rt_err_t nu_sha_finish(struct hwcrypto_hash *hash_ctx, rt_uint8_t *out, r
     }
 
     nu_out = (unsigned char *)out;
-
-#if !defined(NU_HWCRYPTO_NOT_ALIGN_CHECK)
-    unsigned char out_align_flag = 0;
 
     //Checking out data buffer address alignment or not
     if (((rt_uint32_t)nu_out % 4) != 0)
@@ -605,17 +771,31 @@ static rt_err_t nu_sha_finish(struct hwcrypto_hash *hash_ctx, rt_uint8_t *out, r
 
         out_align_flag = 1;
     }
-#endif
+
+    if (psSHACtx->pu8SHATempBuf)
+    {
+        if (psSHACtx->u32DMAMode ==  CRYPTO_DMA_FIRST)
+            SHABlockUpdate(u32SHAOpMode, (uint32_t)psSHACtx->pu8SHATempBuf, psSHACtx->u32SHATempBufLen, CRYPTO_DMA_ONE_SHOT);
+        else
+            SHABlockUpdate(u32SHAOpMode, (uint32_t)psSHACtx->pu8SHATempBuf, psSHACtx->u32SHATempBufLen, CRYPTO_DMA_LAST);
+
+        //free SHATempBuf
+        rt_free(psSHACtx->pu8SHATempBuf);
+        psSHACtx->pu8SHATempBuf = RT_NULL;
+        psSHACtx->u32SHATempBufLen = 0;
+    }
+    else
+    {
+        SHABlockUpdate(u32SHAOpMode, (uint32_t)NULL, 0, CRYPTO_DMA_LAST);
+    }
 
     SHA_Read(CRPT, (uint32_t *)nu_out);
 
-#if !defined(NU_HWCRYPTO_NOT_ALIGN_CHECK)
     if (out_align_flag)
     {
-        memcpy(out, out, length);
-        rt_free(out);
+        rt_memcpy(out, nu_out, length);
+        rt_free(nu_out);
     }
-#endif
 
     return RT_EOK;
 }
@@ -728,7 +908,12 @@ static rt_err_t nu_hwcrypto_create(struct rt_hwcrypto_ctx *ctx)
 
     case HWCRYPTO_TYPE_SHA1:
     {
-        ctx->contex = RT_NULL;
+        ctx->contex = rt_malloc(sizeof(S_SHA_CONTEXT));
+
+        if (ctx->contex == RT_NULL)
+            return -RT_ERROR;
+
+        rt_memset(ctx->contex, 0, sizeof(S_SHA_CONTEXT));
         //Setup SHA1 operation
         ((struct hwcrypto_hash *)ctx)->ops = &nu_sha_ops;
         break;
@@ -736,7 +921,12 @@ static rt_err_t nu_hwcrypto_create(struct rt_hwcrypto_ctx *ctx)
 
     case HWCRYPTO_TYPE_SHA2:
     {
-        ctx->contex = RT_NULL;
+        ctx->contex = rt_malloc(sizeof(S_SHA_CONTEXT));
+
+        if (ctx->contex == RT_NULL)
+            return -RT_ERROR;
+
+        rt_memset(ctx->contex, 0, sizeof(S_SHA_CONTEXT));
         //Setup SHA2 operation
         ((struct hwcrypto_hash *)ctx)->ops = &nu_sha_ops;
         break;
@@ -757,7 +947,6 @@ static rt_err_t nu_hwcrypto_create(struct rt_hwcrypto_ctx *ctx)
 #endif /* !BSP_USING_TRNG */
 
 #endif /* BSP_USING_CRYPTO */
-
 
     default:
         res = -RT_ERROR;
@@ -801,6 +990,32 @@ static void nu_hwcrypto_reset(struct rt_hwcrypto_ctx *ctx)
         break;
     }
 #endif /* !BSP_USING_TRNG */
+#if defined(BSP_USING_CRYPTO)
+    case HWCRYPTO_TYPE_SHA1:
+    case HWCRYPTO_TYPE_SHA2:
+    {
+        S_SHA_CONTEXT *psSHACtx = (S_SHA_CONTEXT *)ctx->contex;
+
+        if (psSHACtx->pu8SHATempBuf)
+        {
+            rt_free(psSHACtx->pu8SHATempBuf);
+        }
+
+        psSHACtx->pu8SHATempBuf = RT_NULL;
+        psSHACtx->u32SHATempBufLen = 0;
+        psSHACtx->u32DMAMode = CRYPTO_DMA_FIRST;
+
+        if ((ctx->type == HWCRYPTO_TYPE_SHA384) || (ctx->type == HWCRYPTO_TYPE_SHA512))
+        {
+            psSHACtx->u32BlockSize = 128;
+        }
+        else
+        {
+            psSHACtx->u32BlockSize = 64;
+        }
+        break;
+    }
+#endif
 
     default:
         break;

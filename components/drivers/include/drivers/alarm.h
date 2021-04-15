@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -49,6 +49,8 @@ struct rt_alarm
     rt_uint32_t flag;
     rt_alarm_callback_t callback;
     struct tm wktime;
+
+    void *user_data;
 };
 
 struct rt_alarm_setup

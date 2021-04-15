@@ -14,7 +14,8 @@
 #if defined (BSP_USING_RTC)
 
 #include <rtdevice.h>
-#include <NuMicro.h>
+#include <sys/time.h>
+#include "NuMicro.h"
 
 /* Private define ---------------------------------------------------------------*/
 
@@ -52,21 +53,21 @@
 static rt_err_t nu_rtc_control(rt_device_t dev, int cmd, void *args);
 
 #if defined (NU_RTC_SUPPORT_IO_RW)
-static rt_size_t nu_rtc_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size);
-static rt_size_t nu_rtc_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size);
+    static rt_size_t nu_rtc_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size);
+    static rt_size_t nu_rtc_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size);
 #endif
 
 static rt_err_t nu_rtc_is_date_valid(const time_t *const t);
 static void nu_rtc_init(void);
 
 #if defined(RT_USING_ALARM)
-static void nu_rtc_alarm_reset(void);
+    static void nu_rtc_alarm_reset(void);
 #endif
 
 /* Public functions -------------------------------------------------------------*/
 #if defined (NU_RTC_SUPPORT_MSH_CMD)
-extern rt_err_t set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day);
-extern rt_err_t set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second);
+    extern rt_err_t set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day);
+    extern rt_err_t set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second);
 #endif
 
 /* Private variables ------------------------------------------------------------*/
@@ -183,8 +184,8 @@ static rt_err_t nu_rtc_is_date_valid(const time_t *const t)
 
     if (!initialised)
     {
-        t_upper = mktime((struct tm *)&tm_upper);
-        t_lower = mktime((struct tm *)&tm_lower);
+        t_upper = timegm((struct tm *)&tm_upper);
+        t_lower = timegm((struct tm *)&tm_lower);
         initialised = RT_TRUE;
     }
 
@@ -225,13 +226,13 @@ static rt_err_t nu_rtc_control(rt_device_t dev, int cmd, void *args)
         tm_out.tm_hour = hw_time.u32Hour;
         tm_out.tm_min = hw_time.u32Minute;
         tm_out.tm_sec = hw_time.u32Second;
-        *time = mktime(&tm_out);
+        *time = timegm(&tm_out);
         break;
 
     case RT_DEVICE_CTRL_RTC_SET_TIME:
 
         time = (time_t *) args;
-        tm_in = localtime(time);
+        tm_in = gmtime(time);
 
         if (nu_rtc_is_date_valid(time) != RT_EOK)
             return RT_ERROR;

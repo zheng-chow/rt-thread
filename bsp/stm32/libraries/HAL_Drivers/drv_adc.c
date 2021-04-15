@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -61,7 +61,6 @@ static rt_err_t stm32_adc_enabled(struct rt_adc_device *device, rt_uint32_t chan
     else
     {
 #if defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32G0) || defined (SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32H7) || defined (SOC_SERIES_STM32WB)
-
         ADC_Disable(stm32_adc_handler);
 #else
         __HAL_ADC_DISABLE(stm32_adc_handler);
@@ -182,12 +181,12 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
 #endif
         return -RT_ERROR;
     }
+
 #if defined(SOC_SERIES_STM32MP1) || defined (SOC_SERIES_STM32H7) || defined (SOC_SERIES_STM32WB)
     ADC_ChanConf.Rank = ADC_REGULAR_RANK_1;
 #else
     ADC_ChanConf.Rank = 1;
 #endif
-
 
 #if defined(SOC_SERIES_STM32F0)
     ADC_ChanConf.SamplingTime = ADC_SAMPLETIME_71CYCLES_5;
@@ -222,7 +221,7 @@ static rt_err_t stm32_get_adc_value(struct rt_adc_device *device, rt_uint32_t ch
     ADC_ChanConf.SingleDiff = LL_ADC_SINGLE_ENDED;
 #elif defined(SOC_SERIES_STM32MP1) || defined(SOC_SERIES_STM32H7) || defined (SOC_SERIES_STM32WB)
     ADC_ChanConf.OffsetNumber = ADC_OFFSET_NONE;  /* ADC channel affected to offset number */
-    ADC_ChanConf.Offset       = 0; 
+    ADC_ChanConf.Offset       = 0;
     ADC_ChanConf.SingleDiff   = ADC_SINGLE_ENDED; /* ADC channel differential mode */
 #endif
 #if defined(SOC_SERIES_STM32H7)

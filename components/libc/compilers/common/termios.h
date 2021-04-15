@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -8,6 +8,8 @@
  */
 #ifndef _TERMIOS_H__
 #define _TERMIOS_H__
+
+#include <rtconfig.h>
 
 #ifdef RT_USING_POSIX_TERMIOS
 #include <sys/types.h>

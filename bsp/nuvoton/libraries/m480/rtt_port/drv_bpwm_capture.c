@@ -12,8 +12,9 @@
 #include <rtconfig.h>
 
 #if defined(BSP_USING_BPWM_CAPTURE)
+#if ((BSP_USING_BPWM0_CAPTURE_CHMSK+BSP_USING_BPWM1_CAPTURE_CHMSK)!=0)
 #include <rtdevice.h>
-#include <NuMicro.h>
+#include "NuMicro.h"
 
 /* Private typedef --------------------------------------------------------------*/
 typedef struct _bpwm_dev
@@ -211,7 +212,7 @@ static rt_err_t nu_bpwm_init(nu_capture_t *nu_capture)
             /* Enable BPWM0 clock */
             SYS_UnlockReg();
             CLK_EnableModuleClock(BPWM0_MODULE);
-            CLK_SetModuleClock(BPWM0_MODULE, CLK_CLKSEL2_BPWM0SEL_PLL, (uint32_t)NULL);
+            CLK_SetModuleClock(BPWM0_MODULE, CLK_CLKSEL2_BPWM0SEL_PLL, 0);
             SYS_LockReg();
             bpwm_config(nu_capture);
             bBPWM0Inited = RT_TRUE;
@@ -225,7 +226,7 @@ static rt_err_t nu_bpwm_init(nu_capture_t *nu_capture)
             /* Enable BPWM1 clock */
             SYS_UnlockReg();
             CLK_EnableModuleClock(BPWM1_MODULE);
-            CLK_SetModuleClock(BPWM1_MODULE, CLK_CLKSEL2_BPWM1SEL_PLL, (uint32_t)NULL);
+            CLK_SetModuleClock(BPWM1_MODULE, CLK_CLKSEL2_BPWM1SEL_PLL, 0);
             SYS_LockReg();
             bpwm_config(nu_capture);
             bBPWM1Inited = RT_TRUE;
@@ -330,4 +331,5 @@ static int nu_bpwm_capture_device_init(void)
 }
 INIT_DEVICE_EXPORT(nu_bpwm_capture_device_init);
 
+#endif  //#if ((BSP_USING_BPWM0_CAPTURE_CHMSK+BSP_USING_BPWM1_CAPTURE_CHMSK)!=0)
 #endif //#if defined(BSP_USING_BPWM_CAPTURE)

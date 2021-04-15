@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -258,7 +258,7 @@ void turn_on_lcd_backlight(void)
 #else
 void turn_on_lcd_backlight(void)
 {
-    
+
 }
 #endif
 
@@ -338,7 +338,7 @@ int drv_lcd_hw_init(void)
 __exit:
     if (result != RT_EOK)
     {
-        rt_sem_delete(&_lcd.lcd_lock);
+        rt_sem_detach(&_lcd.lcd_lock);
 
         if (_lcd.lcd_info.framebuffer)
         {
